@@ -1,6 +1,6 @@
 <b>Double Knitting Pattern Generator</b>
 
-This is a simple, client-side web application designed to help knitters create and visualize double knitting patterns. It allows users to design a pattern for the front and back of a knitted piece independently and then automatically generates a combined chart, which can be downloaded as an image.
+This is a simple web application designed to help knitters create and visualize double knitting patterns. It allows users to design a pattern for the front and back of a knitted piece independently and then automatically generates a combined chart, which can be downloaded as an image.
 
 <b>Features</b>
 
