@@ -1,8 +1,8 @@
-Double Knitting Pattern Generator
+<b>Double Knitting Pattern Generator</b>
 
 This is a simple, client-side web application designed to help knitters create and visualize double knitting patterns. It allows users to design a pattern for the front and back of a knitted piece independently and then automatically generates a combined chart, which can be downloaded as an image.
 
-Features
+<b>Features</b>
 
 Two Input Charts: Design patterns for the "Front" and "Back" of your double knitting project on separate grids.
 
@@ -22,7 +22,7 @@ Restart Function: Clear all charts and start a new design with a single click.
 
 Pure HTML/CSS/JavaScript: No complex build tools or server-side dependencies. Runs directly in your browser.
 
-How it Works
+<b>How it Works</b>
 
 Double knitting creates a fabric with two distinct faces, often in reverse colors. This tool helps you plan patterns where:
 
@@ -30,7 +30,7 @@ Single-Color Area: If both the front and back cells are the same color (e.g., bo
 
 Two-Color Area: If the front and back cells are different colors (e.g., front black, back white), the combined chart shows a cell with a background color matching the front, and a contrasting dot representing the back color. This indicates a "two-color" double knit stitch where one yarn color is knitted and the other is purled, creating distinct patterns on each side.
 
-Combined Chart Legend:
+<b>Combined Chart Legend:</b>
 
  Black cell with White dot (⚪): Front is Black, Back is White. (e.g., Knit with Black yarn, Purl with White yarn)
 
@@ -40,6 +40,6 @@ Combined Chart Legend:
 
  Pure White cell: Both Front and Back are White. (e.g., Knit with White, Purl with White)
 
-Getting Started
+<b>Getting Started</b>
 
 To use this tool, you only need a web browser.
