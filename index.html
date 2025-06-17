@@ -9,7 +9,21 @@
   <!-- html2canvas CDN for converting the rendered HTML to image (for download/copy) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- Configure Tailwind CSS to use "Inter" font -->
+  <!-- Chosen Palette: Warm Neutrals with Subtle Indigo/Green/Red Accents -->
+  <!-- Application Structure Plan: The application uses a three-column dashboard-like structure for its main content (Front Chart, Back Chart, Combined Chart). This allows users to simultaneously view their input patterns and the generated output, fostering direct comparison and immediate feedback. Controls for dimensions, zoom, and chart actions are positioned at the top for easy access. This structure was chosen for its intuitive visual flow, enabling users to easily explore the interactive data (pattern toggling) and synthesize the results (combined chart). -->
+  <!-- Visualization & Content Choices:
+    - Report Info -> Goal -> Viz/Presentation Method -> Interaction -> Justification -> Library/Method
+    - Chart Data -> Inform/Design -> Interactive Grids (HTML Divs with dynamic classes) -> Cell click to toggle color -> Direct manipulation, visual feedback -> Vanilla JS
+    - Combined Pattern Logic -> Inform/Synthesize -> Combined Chart (HTML Divs with dynamic classes and nested spans for dots) -> Auto-generated on input change -> Immediate visualization of complex logic -> Vanilla JS
+    - Pattern Control -> Control -> Numeric Inputs (HTML Input) -> Input change for dimension update -> Precise control over grid size -> Vanilla JS
+    - Zoom Control -> Explore/Context -> Buttons (HTML Button) -> Click to adjust cell size -> Adaptability for detail/overview -> Vanilla JS, CSS Variables
+    - Image Download/Copy -> Output -> Buttons (HTML Button) -> Click to save/copy image -> User utility, sharing -> Canvas API (for dots), html2canvas (for overall capture)
+    - Restart -> Control -> Button (HTML Button) -> Click to reset patterns -> User convenience -> Vanilla JS
+    - Chart Labeling -> Inform -> Column/Row Numbers (HTML Divs/Spans directly in grid) -> Dynamically rendered, respond to zoom -> Improved clarity for knitting patterns (right-to-left, bottom-to-top for rows, right-to-left for cols at bottom) -> Vanilla JS
+    - Information Architecture is designed to be highly interactive and task-oriented, allowing direct manipulation of input and immediate viewing of output.
+  -->
+  <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
     body {
@@ -28,6 +42,7 @@
         --cell-size: 24px; /* Default cell size */
         --dot-size: 12px; /* Default dot size, half of cell-size */
         --dot-font-size: 0.75rem; /* text-xs for dots */
+        --number-font-size: 0.7rem; /* Font size for row/col numbers */
     }
     .grid-cell {
       width: var(--cell-size);
@@ -73,7 +88,7 @@
         opacity: 1;
     }
 
-    /* Dot container styling - used for live display, for download we draw on canvas */
+    /* Improved centering for dots using absolute positioning */
     .grid-cell .dot-container {
         position: absolute;
         top: 50%;
@@ -90,6 +105,42 @@
         font-size: var(--dot-font-size);
         box-sizing: border-box; /* Include border in size */
     }
+
+    /* Styles for number headers */
+    .number-header {
+        width: var(--cell-size);
+        height: var(--cell-size);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--number-font-size); /* Now scales with zoom */
+        color: #4b5563; /* gray-700 */
+        font-weight: 600;
+        box-sizing: border-box;
+    }
+    /* Specific styling for the top-left blank corner of the grid */
+    .corner-header {
+      width: var(--cell-size);
+      height: var(--cell-size);
+    }
+    .chart-grid-container {
+      display: grid;
+      gap: 1px; /* Equivalent to gap-px */
+      background-color: #d1d5db; /* Equivalent to bg-gray-300 */
+      border-radius: 2px; /* Equivalent to rounded-sm */
+      max-height: 400px;
+      overflow: auto; /* Use auto for scrolling content, not hidden */
+      overflow-y: auto; /* Scroll for height */
+      overflow-x: auto; /* Scroll for width if content exceeds */
+    }
+    /* Hide scrollbar for the specific grid containers */
+    .chart-grid-container::-webkit-scrollbar {
+        display: none;
+    }
+    .chart-grid-container {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200 p-8 font-inter text-gray-800">
@@ -97,60 +148,69 @@
     Double Knitting Pattern Generator
   </h1>
 
-  <!-- Grid Dimension Controls -->
-  <div class="flex justify-center items-center mb-8 space-x-4">
-    <label for="rows" class="font-medium text-lg">Rows:</label>
-    <input
-      type="number"
-      id="rows"
-      value="20"
-      min="1"
-      class="w-20 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-    />
-    <label for="cols" class="font-medium text-lg">Columns:</label>
-    <input
-      type="number"
-      id="cols"
-      value="20"
-      min="1"
-      class="w-20 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-    />
+  <!-- Global Controls -->
+  <div class="flex flex-col md:flex-row justify-center items-center mb-8 space-y-4 md:space-y-0 md:space-x-4">
+    <!-- Grid Dimension Controls -->
+    <div class="flex items-center space-x-4">
+      <label for="rows" class="font-medium text-lg">Rows:</label>
+      <input
+        type="number"
+        id="rows"
+        value="20"
+        min="1"
+        class="w-20 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+      />
+      <label for="cols" class="font-medium text-lg">Columns:</label>
+      <input
+        type="number"
+        id="cols"
+        value="20"
+        min="1"
+        class="w-20 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+      />
+    </div>
+
+    <!-- Zoom Controls -->
+    <div class="flex items-center space-x-4">
+      <span class="font-medium text-lg">Zoom:</span>
+      <button id="zoomOutBtn" class="px-4 py-2 bg-indigo-500 text-white rounded-md shadow-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+        Zoom Out
+      </button>
+      <button id="zoomInBtn" class="px-4 py-2 bg-indigo-500 text-white rounded-md shadow-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+        Zoom In
+      </button>
+    </div>
   </div>
 
-  <!-- Zoom Controls -->
-  <div class="flex justify-center items-center mb-8 space-x-4">
-    <span class="font-medium text-lg">Zoom:</span>
-    <button id="zoomOutBtn" class="px-4 py-2 bg-indigo-500 text-white rounded-md shadow-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
-      Zoom Out
-    </button>
-    <button id="zoomInBtn" class="px-4 py-2 bg-indigo-500 text-white rounded-md shadow-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
-      Zoom In
-    </button>
-  </div>
-
-
+  <!-- Chart Display Area -->
   <div class="flex flex-wrap justify-center items-start">
     <!-- Front Chart Container -->
-    <div class="flex flex-col items-center p-4 bg-gray-100 rounded-lg shadow-md m-4">
+    <div class="chart-wrapper flex flex-col items-center p-4 bg-gray-100 rounded-lg shadow-md m-4">
       <h3 class="text-xl font-semibold mb-4 text-gray-800">Front Chart (Click to toggle color)</h3>
-      <div id="frontChartGrid" class="grid gap-px bg-gray-300 rounded-sm overflow-hidden" style="max-height: 400px; overflow-y: auto;"></div>
+      <div id="frontChartGrid" class="chart-grid-container"></div>
+      <button id="inverseFrontBtn" class="mt-4 px-4 py-2 bg-purple-500 text-white rounded-md shadow-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75">
+        Inverse Front Colors
+      </button>
     </div>
 
     <!-- Back Chart Container -->
-    <div class="flex flex-col items-center p-4 bg-gray-100 rounded-lg shadow-md m-4">
+    <div class="chart-wrapper flex flex-col items-center p-4 bg-gray-100 rounded-lg shadow-md m-4">
       <h3 class="text-xl font-semibold mb-4 text-gray-800">Back Chart (Click to toggle color)</h3>
-      <div id="backChartGrid" class="grid gap-px bg-gray-300 rounded-sm overflow-hidden" style="max-height: 400px; overflow-y: auto;"></div>
+      <div id="backChartGrid" class="chart-grid-container"></div>
+      <button id="inverseBackBtn" class="mt-4 px-4 py-2 bg-purple-500 text-white rounded-md shadow-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75">
+        Inverse Back Colors
+      </button>
     </div>
 
     <!-- Combined Chart Container -->
-    <div class="flex flex-col items-center p-4 bg-gray-100 rounded-lg shadow-md m-4">
+    <div class="chart-wrapper flex flex-col items-center p-4 bg-gray-100 rounded-lg shadow-md m-4">
       <h3 class="text-xl font-semibold mb-4 text-gray-800">Combined Chart (Read-Only)</h3>
-      <div id="combinedChartGrid" class="grid gap-px bg-gray-300 rounded-sm overflow-hidden" style="max-height: 400px; overflow-y: auto;"></div>
+      <div id="combinedChartGrid" class="chart-grid-container"></div>
     </div>
   </div>
 
   <!-- Download/Copy/Restart Controls -->
-  <div class="flex justify-center items-center mt-8 space-x-4">
+  <div class="flex flex-col md:flex-row justify-center items-center mt-8 space-y-4 md:space-y-0 md:space-x-4">
     <button id="downloadChartBtn" class="px-6 py-3 bg-green-500 text-white font-semibold rounded-md shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-150 ease-in-out">
       Download Combined Chart (PNG)
     </button>
@@ -188,13 +248,13 @@
     let backChart = [];
     let combinedChart = [];
     let currentCellSize = 24; // Initial cell size in pixels
-    let currentDotSize = 12; // Initial dot size in pixels
-    let currentDotFontSize = 0.75; // Initial font size in rem
+    let currentDotSize = 12; // Initial dot size, half of cell-size
+    let currentDotFontSize = 0.75; // Initial font size in rem for dots
+    let currentNumberFontSize = '0.7rem'; // Initial font size for numbers
 
     const MIN_CELL_SIZE = 8;
     const MAX_CELL_SIZE = 60;
     const ZOOM_STEP = 4; // Pixel step for cell size
-    const FONT_ZOOM_FACTOR = 0.03; // Rem adjustment for font size based on cell size change
 
     const frontChartGridElement = document.getElementById('frontChartGrid');
     const backChartGridElement = document.getElementById('backChartGrid');
@@ -205,83 +265,113 @@
     const zoomOutBtn = document.getElementById('zoomOutBtn');
     const downloadChartBtn = document.getElementById('downloadChartBtn');
     const copyChartBtn = document.getElementById('copyChartBtn');
-    const restartBtn = document.getElementById('restartBtn'); // New restart button element
+    const restartBtn = document.getElementById('restartBtn');
+    const inverseFrontBtn = document.getElementById('inverseFrontBtn');
+    const inverseBackBtn = document.getElementById('inverseBackBtn');
     const messageBox = document.getElementById('messageBox');
 
-    // Function to show a temporary message
     function showMessage(message, duration = 3000) {
         messageBox.textContent = message;
         messageBox.classList.remove('hidden');
         messageBox.classList.add('show');
         setTimeout(() => {
             messageBox.classList.remove('show');
-            // Give time for fade out before hiding
             setTimeout(() => {
                 messageBox.classList.add('hidden');
             }, 500);
         }, duration);
     }
 
-    // Function to create an empty chart (2D array of booleans)
-    function createEmptyChart(r, c) {
-      return Array(r).fill(null).map(() => Array(c).fill(false));
+    function createEmptyChart(r, c, startBlack = false) {
+      return Array(r).fill(null).map(() => Array(c).fill(startBlack));
     }
 
-    // Function to initialize chart data (only once or on dimension change)
     function initializeChartData() {
-        frontChart = createEmptyChart(rows, cols);
-        backChart = createEmptyChart(rows, cols);
+        frontChart = createEmptyChart(rows, cols, false); // Front starts white
+        backChart = createEmptyChart(rows, cols, true); // Back starts black
         console.log('Chart data initialized.');
     }
 
-    // Function to render a chart into a specified DOM element
-    function renderChart(chartData, containerElement, enableEdit, chartType) {
-      containerElement.innerHTML = ''; // Clear existing cells
-      chartData.forEach((row, rIdx) => {
-        row.forEach((cell, cIdx) => {
-          const cellDiv = document.createElement('div');
-          cellDiv.classList.add('grid-cell');
-          cellDiv.dataset.row = rIdx;
-          cellDiv.dataset.col = cIdx;
+    // Function to render an entire chart grid, including headers
+    function renderChart(chartData, containerElementId, enableEdit, chartType) {
+        const containerElement = document.getElementById(containerElementId);
+        containerElement.innerHTML = ''; // Clear existing cells
 
-          if (enableEdit) {
-            cellDiv.classList.add('grid-cell-editable');
-            cellDiv.addEventListener('click', () => toggleCell(chartType, rIdx, cIdx));
-          }
+        // Set grid template columns: 1 for row numbers, then 'cols' for pattern cells
+        containerElement.style.gridTemplateColumns = `var(--cell-size) repeat(${cols}, var(--cell-size))`;
+        // Set grid template rows: 'rows' for pattern cells, then 1 for column numbers
+        containerElement.style.gridTemplateRows = `repeat(${rows}, var(--cell-size)) var(--cell-size)`;
 
-          // Set initial color based on boolean value (for front/back charts)
-          if (chartType === 'front' || chartType === 'back') {
-            cellDiv.classList.add(cell ? 'bg-black' : 'bg-white');
-          }
+        // --- Render Main Pattern Area and Row Headers ---
+        for (let r = rows; r >= 1; r--) { // Loop for rows (Bottom to Top for numbering)
+            // Row Header (first column of this logical row)
+            const rowHeader = document.createElement('div');
+            rowHeader.classList.add('number-header');
+            rowHeader.textContent = r; // Display r (1-indexed)
+            containerElement.appendChild(rowHeader);
 
-          containerElement.appendChild(cellDiv);
-        });
-      });
+            // Pattern Cells for this row
+            for (let c = 1; c <= cols; c++) { // Loop for columns (Left to Right for drawing)
+                const cellDiv = document.createElement('div');
+                cellDiv.classList.add('grid-cell');
+                // Store 0-indexed row/col for internal data array reference
+                cellDiv.dataset.patternRow = r - 1; // 0-indexed row for internal data
+                cellDiv.dataset.patternCol = c - 1; // 0-indexed col for internal data
+
+                if (enableEdit) {
+                    cellDiv.classList.add('grid-cell-editable');
+                    cellDiv.addEventListener('click', () => toggleCell(chartType, r - 1, c - 1));
+                }
+
+                // Set initial color for front/back charts based on their data
+                if (chartType === 'front') {
+                    cellDiv.classList.add(frontChart[r - 1][c - 1] ? 'bg-black' : 'bg-white');
+                } else if (chartType === 'back') {
+                    cellDiv.classList.add(backChart[r - 1][c - 1] ? 'bg-black' : 'bg-white');
+                }
+                // Combined chart cells will be updated by generateAndRenderCombinedChart after their initial render
+                containerElement.appendChild(cellDiv);
+            }
+        }
+
+        // --- Render Bottom Row: Blank Corner + Column Headers ---
+        // Blank bottom-left corner cell (occupies the space of the row number in the bottom row)
+        const bottomLeftCornerDiv = document.createElement('div');
+        bottomLeftCornerDiv.classList.add('corner-header');
+        containerElement.appendChild(bottomLeftCornerDiv);
+
+        // Column headers (Right to Left: cols, cols-1, ..., 1)
+        for (let c = cols; c >= 1; c--) {
+            const colHeader = document.createElement('div');
+            colHeader.classList.add('number-header');
+            colHeader.textContent = c; // Display c (1-indexed)
+            containerElement.appendChild(colHeader);
+        }
     }
 
-    // Function to toggle a cell's color and update charts
-    function toggleCell(chartType, rIdx, cIdx) {
-      console.log(`Toggling cell [${rIdx}, ${cIdx}] in ${chartType} chart.`);
+    function toggleCell(chartType, patternRIdx, patternCIdx) {
+      console.log(`Toggling cell [${patternRIdx}, ${patternCIdx}] in ${chartType} chart.`);
+      let targetChart;
+      let targetElementId;
+
       if (chartType === 'front') {
-        frontChart[rIdx][cIdx] = !frontChart[rIdx][cIdx];
-        updateCellColor(frontChartGridElement, rIdx, cIdx, frontChart[rIdx][cIdx]);
+        targetChart = frontChart;
+        targetElementId = 'frontChartGrid';
       } else if (chartType === 'back') {
-        backChart[rIdx][cIdx] = !backChart[rIdx][cIdx];
-        updateCellColor(backChartGridElement, rIdx, cIdx, backChart[rIdx][cIdx]);
+        targetChart = backChart;
+        targetElementId = 'backChartGrid';
+      }
+
+      targetChart[patternRIdx][patternCIdx] = !targetChart[patternRIdx][patternCIdx];
+      // Update the specific cell's color in the DOM
+      const cellDiv = document.getElementById(targetElementId).querySelector(`[data-pattern-row="${patternRIdx}"][data-pattern-col="${patternCIdx}"]`);
+      if (cellDiv) {
+          cellDiv.classList.remove('bg-black', 'bg-white', 'bg-gray-200');
+          cellDiv.classList.add(targetChart[patternRIdx][patternCIdx] ? 'bg-black' : 'bg-white');
       }
       generateAndRenderCombinedChart();
     }
 
-    // Helper to update a single cell's background color
-    function updateCellColor(containerElement, rIdx, cIdx, isBlack) {
-      const cellDiv = containerElement.querySelector(`[data-row="${rIdx}"][data-col="${cIdx}"]`);
-      if (cellDiv) {
-        cellDiv.classList.remove('bg-black', 'bg-white', 'bg-gray-200'); // Remove all color classes
-        cellDiv.classList.add(isBlack ? 'bg-black' : 'bg-white');
-      }
-    }
-
-    // Function to generate and render the combined chart (DOM elements)
     function generateAndRenderCombinedChart() {
       console.log('Generating and rendering combined chart...');
       combinedChart = frontChart.map((frontRow, rIdx) =>
@@ -301,77 +391,64 @@
       );
       console.log('New Combined Chart Data (for DOM render):', combinedChart);
 
-      // Render the combined chart to DOM
-      combinedChartGridElement.innerHTML = ''; // Clear existing cells
-      combinedChart.forEach((row, rIdx) => {
+      combinedChart.forEach((row, rIdx) => { // rIdx, cIdx here are 0-indexed for pattern data
         row.forEach((cellValue, cIdx) => {
-          const cellDiv = document.createElement('div');
-          cellDiv.classList.add('grid-cell');
-          cellDiv.dataset.row = rIdx;
-          cellDiv.dataset.col = cIdx;
+          // Find the specific cell by its data attributes
+          const cellDiv = combinedChartGridElement.querySelector(`[data-pattern-row="${rIdx}"][data-pattern-col="${cIdx}"]`);
+          if (cellDiv) {
+            let backgroundColorClass = 'bg-gray-200';
+            let dotContentHTML = '';
 
-          let backgroundColorClass = 'bg-gray-200';
-          let dotContentHTML = '';
+            if (cellValue === 'BB' || cellValue === 'BW') {
+              backgroundColorClass = 'bg-black';
+            } else if (cellValue === 'WW' || cellValue === 'WB') {
+              backgroundColorClass = 'bg-white';
+            }
 
-          if (cellValue === 'BB' || cellValue === 'BW') {
-            backgroundColorClass = 'bg-black';
-          } else if (cellValue === 'WW' || cellValue === 'WB') {
-            backgroundColorClass = 'bg-white';
+            cellDiv.classList.remove('bg-black', 'bg-white', 'bg-gray-200');
+            cellDiv.classList.add(backgroundColorClass);
+
+            if (cellValue === 'BW') {
+              dotContentHTML = '<span class="dot-container text-white">⚪</span>';
+            } else if (cellValue === 'WB') {
+              dotContentHTML = '<span class="dot-container text-black">⚫</span>';
+            }
+            cellDiv.innerHTML = dotContentHTML; // Set innerHTML with the dot span
           }
-
-          cellDiv.classList.add(backgroundColorClass);
-
-          // Use the new dot-container class for proper centering
-          if (cellValue === 'BW') { // Black background, White dot
-            dotContentHTML = '<span class="dot-container text-white">⚪</span>'; // White circle emoji for black background
-          } else if (cellValue === 'WB') { // White background, Black dot
-            dotContentHTML = '<span class="dot-container text-black">⚫</span>'; // Black circle emoji for white background
-          }
-          cellDiv.innerHTML = dotContentHTML; // Set innerHTML with the dot span
-          combinedChartGridElement.appendChild(cellDiv);
         });
       });
       console.log('Combined Chart rendered to DOM.');
     }
 
-    // --- Zoom Functionality ---
     function updateZoom(factor) {
         let newSize = currentCellSize + (factor * ZOOM_STEP);
-        newSize = Math.max(MIN_CELL_SIZE, Math.min(MAX_CELL_SIZE, newSize)); // Clamp between min and max
+        newSize = Math.max(MIN_CELL_SIZE, Math.min(MAX_CELL_SIZE, newSize));
 
         if (newSize !== currentCellSize) {
             currentCellSize = newSize;
-            // Adjust dot size and font size proportionally
-            currentDotSize = Math.max(8, Math.round(currentCellSize / 2)); // Keep dot roughly half the cell size
-            currentDotFontSize = Math.max(0.5, currentCellSize / 32); // Adjust font size relative to cell size
+            currentDotSize = Math.max(8, Math.round(currentCellSize / 2));
+            currentDotFontSize = Math.max(0.5, currentCellSize / 32);
+            currentNumberFontSize = `${Math.max(0.6, currentCellSize / 35)}rem`; // Adjust number font size
 
             document.documentElement.style.setProperty('--cell-size', `${currentCellSize}px`);
             document.documentElement.style.setProperty('--dot-size', `${currentDotSize}px`);
             document.documentElement.style.setProperty('--dot-font-size', `${currentDotFontSize}rem`);
+            document.documentElement.style.setProperty('--number-font-size', currentNumberFontSize);
         }
 
-        // Always recalculate and apply grid-template-columns for all grids based on current cols and cell size
-        const gridStyle = `repeat(${cols}, var(--cell-size))`; // Use CSS variable
-        frontChartGridElement.style.gridTemplateColumns = gridStyle;
-        backChartGridElement.style.gridTemplateColumns = gridStyle;
-        combinedChartGridElement.style.gridTemplateColumns = gridStyle;
-
-        // Always re-render all charts to apply new cell size and dot styles, preserving data
-        renderChart(frontChart, frontChartGridElement, true, 'front');
-        renderChart(backChart, backChartGridElement, true, 'back');
+        // Re-render all charts to apply new cell size, dot, and number styles, preserving data
+        renderChart(frontChart, 'frontChartGrid', true, 'front');
+        renderChart(backChart, 'backChartGrid', true, 'back');
+        renderChart(combinedChart, 'combinedChartGrid', false, 'combined'); // Explicitly render combined chart grid
         generateAndRenderCombinedChart(); // Re-render combined with current data
-        console.log(`Zoom updated to cell size: ${currentCellSize}px, dot size: ${currentDotSize}px, font size: ${currentDotFontSize}rem.`);
+        console.log(`Zoom updated to cell size: ${currentCellSize}px, dot size: ${currentDotSize}px, font size: ${currentDotFontSize}rem, number font size: ${currentNumberFontSize}.`);
     }
 
-    // --- Image Generation using Canvas API ---
-    // Function to draw the combined chart onto a hidden canvas for precise image generation
     function drawCombinedChartToCanvas() {
         const canvas = document.createElement('canvas');
-        // Scale the canvas size for higher resolution image (e.g., 4x the current DOM cell size)
-        const renderScale = 4;
+        const renderScale = 4; // Higher scale for better resolution
         const scaledCellSize = currentCellSize * renderScale;
-        const scaledDotSize = currentDotSize * renderScale;
-        const scaledDotFontSizePx = parseFloat(document.documentElement.style.getPropertyValue('--dot-font-size')) * 16 * renderScale; // Convert rem to px
+        const scaledDotRadius = (currentDotSize / 2) * renderScale;
 
         canvas.width = cols * scaledCellSize;
         canvas.height = rows * scaledCellSize;
@@ -394,49 +471,32 @@
 
                 // Draw cell border
                 ctx.strokeStyle = '#9ca3af'; // gray-400
-                ctx.lineWidth = 1 * renderScale; // Scale border thickness too
+                ctx.lineWidth = 1 * renderScale;
                 ctx.strokeRect(x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, scaledCellSize - ctx.lineWidth, scaledCellSize - ctx.lineWidth);
 
-                // Draw dot if applicable
+                // Draw solid circle dot if applicable (no stroke for solid look)
                 if (cellValue === 'BW') { // Black background, White dot
                     ctx.fillStyle = '#fff'; // White dot color
-                    ctx.strokeStyle = '#6b7280'; // gray-500 border
-                    ctx.lineWidth = 1 * renderScale; // Scale dot border
                     ctx.beginPath();
-                    // Center the dot within the scaled cell
                     const dotCenterX = x + scaledCellSize / 2;
                     const dotCenterY = y + scaledCellSize / 2;
-                    // Draw a circle for the dot
-                    ctx.arc(dotCenterX, dotCenterY, scaledDotSize / 2, 0, Math.PI * 2);
+                    ctx.arc(dotCenterX, dotCenterY, scaledDotRadius, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.stroke();
-
-                    // For the emoji inside the dot (optional, can be just the circle)
-                    // If you want the emoji, you need to load a font that supports it on the canvas.
-                    // For perfect rendering, drawing a simple circle is safer.
-                    // If emojis are critical, consider using a specific font like 'Noto Color Emoji' and loading it.
-                    // For now, sticking with the circle as it's guaranteed to be centered.
                 } else if (cellValue === 'WB') { // White background, Black dot
                     ctx.fillStyle = '#000'; // Black dot color
-                    ctx.strokeStyle = '#6b7280'; // gray-500 border
-                    ctx.lineWidth = 1 * renderScale; // Scale dot border
                     ctx.beginPath();
                     const dotCenterX = x + scaledCellSize / 2;
                     const dotCenterY = y + scaledCellSize / 2;
-                    ctx.arc(dotCenterX, dotCenterY, scaledDotSize / 2, 0, Math.PI * 2);
+                    ctx.arc(dotCenterX, dotCenterY, scaledDotRadius, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.stroke();
                 }
             });
         });
         return canvas;
     }
 
-
-    // --- Download/Copy Functionality ---
     function downloadCombinedChart() {
         showMessage('Generating image...', 1000);
-        // Use the new canvas drawing function
         const canvas = drawCombinedChartToCanvas();
         const image = canvas.toDataURL('image/png');
         const link = document.createElement('a');
@@ -451,10 +511,8 @@
 
     function copyCombinedChart() {
         showMessage('Copying image to clipboard...', 1000);
-        // Use the new canvas drawing function
         const canvas = drawCombinedChartToCanvas();
         canvas.toBlob(function(blob) {
-            // Use ClipboardItem only if navigator.clipboard is available
             if (navigator.clipboard && navigator.clipboard.write) {
                 const item = new ClipboardItem({ "image/png": blob });
                 navigator.clipboard.write([item])
@@ -473,59 +531,82 @@
         }, 'image/png');
     }
 
-    // --- Restart Functionality ---
     function restartCharts() {
         console.log('Restarting charts...');
-        // Reset dimensions to default values
         rowsInput.value = 20;
         colsInput.value = 20;
         rows = 20;
         cols = 20;
-        currentCellSize = 24; // Reset zoom to default
+        currentCellSize = 24;
         currentDotSize = 12;
         currentDotFontSize = 0.75;
+        currentNumberFontSize = '0.7rem'; // Reset number font size
 
-        initializeChartData(); // Re-initialize data arrays to empty
+        initializeChartData();
         updateZoom(0); // Trigger a full re-render with default settings and empty charts
         showMessage('Charts have been reset!');
     }
 
+    function inverseChartColors(chartType) {
+        let targetChart;
+        let targetElementId;
+
+        if (chartType === 'front') {
+            targetChart = frontChart;
+            targetElementId = 'frontChartGrid';
+        } else if (chartType === 'back') {
+            targetChart = backChart;
+            targetElementId = 'backChartGrid';
+        }
+
+        // Inverse the data
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                targetChart[r][c] = !targetChart[r][c];
+                // Update the DOM cell's color
+                const cellDiv = document.getElementById(targetElementId).querySelector(`[data-pattern-row="${r}"][data-pattern-col="${c}"]`);
+                if (cellDiv) {
+                    cellDiv.classList.remove('bg-black', 'bg-white', 'bg-gray-200');
+                    cellDiv.classList.add(targetChart[r][c] ? 'bg-black' : 'bg-white');
+                }
+            }
+        }
+        generateAndRenderCombinedChart(); // Regenerate and re-render combined chart
+        showMessage(`${chartType} chart colors inverted!`);
+    }
 
     // Event listeners for dimension inputs
     rowsInput.addEventListener('change', (e) => {
       rows = Math.max(1, parseInt(e.target.value));
-      initializeChartData(); // Re-initialize data arrays
-      updateZoom(0); // This will re-render all charts with new dimensions
+      initializeChartData();
+      updateZoom(0);
     });
 
     colsInput.addEventListener('change', (e) => {
       cols = Math.max(1, parseInt(e.target.value));
-      initializeChartData(); // Re-initialize data arrays
-      updateZoom(0); // This will re-render all charts with new dimensions
+      initializeChartData();
+      updateZoom(0);
     });
 
     // Event listeners for zoom buttons
     zoomInBtn.addEventListener('click', () => updateZoom(1));
     zoomOutBtn.addEventListener('click', () => updateZoom(-1));
 
-    // Event listeners for download/copy buttons
+    // Event listeners for download/copy/restart buttons
     downloadChartBtn.addEventListener('click', downloadCombinedChart);
     copyChartBtn.addEventListener('click', copyCombinedChart);
-
-    // Event listener for restart button
     restartBtn.addEventListener('click', restartCharts);
+
+    // Event listeners for inverse buttons
+    inverseFrontBtn.addEventListener('click', () => inverseChartColors('front'));
+    inverseBackBtn.addEventListener('click', () => inverseChartColors('back'));
 
     // Initial setup on window load
     window.onload = () => {
-        // 1. Ensure global rows and cols match input values immediately on load
         rows = Math.max(1, parseInt(rowsInput.value));
         cols = Math.max(1, parseInt(colsInput.value));
-
-        // 2. Initialize chart data with the CORRECT initial dimensions
         initializeChartData();
-
-        // 3. Call updateZoom(0) to set initial sizes, apply grid styles, and perform the first render
-        updateZoom(0);
+        updateZoom(0); // This will trigger the first full render
     };
   </script>
 </body>
