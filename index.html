@@ -11,7 +11,7 @@
   <!-- jsPDF CDN for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-  <!-- Chosen Palette: Warm Neutrals with Subtle Indigo/Green/Red Accents -->
+  <!-- Chosen Palette: Nature Walk Palette (Earthy Tones) -->
   <!-- Application Structure Plan: The application uses a three-column dashboard-like structure for its main content (Front Chart, Back Chart, Combined Chart). This allows users to simultaneously view their input patterns and the generated output, fostering direct comparison and immediate feedback. Controls for dimensions, zoom, and chart actions are positioned at the top for easy access. This structure was chosen for its intuitive visual flow, enabling users to easily explore the interactive data (pattern toggling) and synthesize the results (combined chart). -->
   <!-- Visualization & Content Choices:
     - Report Info -> Goal -> Viz/Presentation Method -> Interaction -> Justification -> Library/Method
@@ -50,25 +50,25 @@
     .grid-cell {
       width: var(--cell-size);
       height: var(--cell-size);
-      border: 1px solid #9ca3af; /* Equivalent to border border-gray-400 */
-      border-radius: 2px; /* Equivalent to rounded-sm */
-      display: flex; /* Use flex to center content */
-      align-items: center; /* Center vertically */
-      justify-content: center; /* Center horizontally */
-      position: relative; /* For absolute positioning of dot-container */
-      box-sizing: border-box; /* Include padding and border in the element's total width and height */
-      overflow: hidden; /* Hide anything outside the cell */
+      border: 1px solid #A19E92; /* Subtle grey-green-brown */
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-sizing: border-box;
+      overflow: hidden;
     }
     .grid-cell-editable:hover {
       opacity: 0.75;
       cursor: pointer;
     }
+    /* Chart cells are now pure black/white */
     .bg-black { background-color: #000; }
     .bg-white { background-color: #fff; }
-    .bg-gray-200 { background-color: #e5e7eb; } /* Fallback/initial color */
-    .text-white { color: #fff; }
     .text-black { color: #000; }
-    .border-gray-500 { border-color: #6b7280; }
+    .text-white { color: #fff; }
+
 
     /* Styles for the message box */
     .message-box {
@@ -76,8 +76,8 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background-color: #333;
-        color: #fff;
+        background-color: #4F6B4D; /* Deep forest green */
+        color: #FCFCF8; /* Off-white */
         padding: 15px 30px;
         border-radius: 8px;
         z-index: 1000;
@@ -96,17 +96,17 @@
         position: absolute;
         top: 50%;
         left: 50%;
-        transform: translate(-50%, -50%); /* Centering trick */
+        transform: translate(-50%, -50%);
         width: var(--dot-size);
         height: var(--dot-size);
-        line-height: var(--dot-size); /* Ensure text is vertically centered within its own box */
+        line-height: var(--dot-size);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 9999px; /* rounded-full */
-        border: 1px solid #6b7280; /* border-gray-500 */
+        border-radius: 9999px;
+        border: 1px solid #A19E92; /* Subtle grey-green-brown */
         font-size: var(--dot-font-size);
-        box-sizing: border-box; /* Include border in size */
+        box-sizing: border-box;
     }
 
     /* Styles for number headers */
@@ -116,8 +116,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: var(--number-font-size); /* Now scales with zoom */
-        color: #4b5563; /* gray-700 */
+        font-size: var(--number-font-size);
+        color: #6B7F6C; /* Medium forest green */
         font-weight: 600;
         box-sizing: border-box;
     }
@@ -128,13 +128,13 @@
     }
     .chart-grid-container {
       display: grid;
-      gap: 1px; /* Equivalent to gap-px */
-      background-color: #d1d5db; /* Equivalent to bg-gray-300 */
-      border-radius: 2px; /* Equivalent to rounded-sm */
+      gap: 1px;
+      background-color: #C6B2A8; /* Muted rosy brown */
+      border-radius: 2px;
       max-height: 400px;
-      overflow: auto; /* Use auto for scrolling content, not hidden */
-      overflow-y: auto; /* Scroll for height */
-      overflow-x: auto; /* Scroll for width if content exceeds */
+      overflow: auto;
+      overflow-y: auto;
+      overflow-x: auto;
     }
     /* Hide scrollbar for the specific grid containers */
     .chart-grid-container::-webkit-scrollbar {
@@ -147,28 +147,41 @@
 
     /* Styles for Written Instructions Output */
     #writtenInstructionsOutput {
-        white-space: pre-wrap; /* Preserves whitespace and wraps text */
-        font-family: 'Courier New', Courier, monospace; /* Monospace font for pattern text */
-        background-color: #f8fafc; /* bg-gray-50 */
-        border: 1px solid #e2e8f0; /* border-gray-200 */
-        border-radius: 0.5rem; /* rounded-lg */
-        padding: 1.5rem; /* p-6 */
-        margin-top: 2.5rem; /* mt-10 */
-        max-width: 42rem; /* max-w-xl (approx) */
+        white-space: pre-wrap;
+        font-family: 'Courier New', Courier, monospace;
+        background-color: #FCFCF8; /* Off-white */
+        border: 1px solid #A19E92; /* Subtle grey-green-brown */
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-top: 2.5rem;
+        max-width: 42rem;
         margin-left: auto;
         margin-right: auto;
-        color: #334155; /* text-slate-700 */
-        font-size: 0.875rem; /* text-sm */
+        color: #4F6B4D; /* Deep forest green */
+        font-size: 0.875rem;
         line-height: 1.5;
-        overflow-x: auto; /* Allow horizontal scroll for long lines */
-        min-height: 50px; /* Ensure it's visible even when empty */
+        overflow-x: auto;
+        min-height: 50px;
+    }
+    /* Header banner style */
+    .header-banner {
+      background-color: #88AA80; /* Muted sage green */
+      padding: 1.5rem 0; /* py-6 */
+      margin-bottom: 2.5rem; /* mb-10 */
+      border-radius: 0.5rem; /* rounded-lg */
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* shadow-md */
+      text-align: center;
     }
   </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200 p-8 font-inter text-gray-800">
-  <h1 class="text-4xl font-bold text-center mb-10 text-indigo-800 drop-shadow-lg">
-    Double Knitting Pattern Generator
-  </h1>
+<body class="min-h-screen bg-[#E0EEDA] p-8 font-inter text-[#4F6B4D]">
+  <!-- Header Banner -->
+  <div class="header-banner">
+    <h1 class="text-4xl font-bold text-[#3D4C3A] drop-shadow-lg">
+      Double Knitting Pattern Generator
+    </h1>
+  </div>
+
 
   <!-- Global Controls -->
   <div class="flex flex-col md:flex-row justify-center items-center mb-8 space-y-4 md:space-y-0 md:space-x-4">
@@ -180,7 +193,7 @@
         id="rows"
         value="20"
         min="1"
-        class="w-20 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+        class="w-20 p-2 border border-[#A19E92] rounded-md shadow-sm focus:ring-[#D98A5B] focus:border-[#D98A5B]"
       />
       <label for="cols" class="font-medium text-lg">Columns:</label>
       <input
@@ -188,17 +201,17 @@
         id="cols"
         value="20"
         min="1"
-        class="w-20 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+        class="w-20 p-2 border border-[#A19E92] rounded-md shadow-sm focus:ring-[#D98A5B] focus:border-[#D98A5B]"
       />
     </div>
 
     <!-- Zoom Controls -->
     <div class="flex items-center space-x-4">
       <span class="font-medium text-lg">Zoom:</span>
-      <button id="zoomOutBtn" class="px-4 py-2 bg-indigo-500 text-white rounded-md shadow-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+      <button id="zoomOutBtn" class="px-4 py-2 bg-[#D98A5B] text-white rounded-md shadow-md hover:bg-[#C97A4B] focus:outline-none focus:ring-2 focus:ring-[#D98A5B] focus:ring-opacity-75">
         Zoom Out
       </button>
-      <button id="zoomInBtn" class="px-4 py-2 bg-indigo-500 text-white rounded-md shadow-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+      <button id="zoomInBtn" class="px-4 py-2 bg-[#D98A5B] text-white rounded-md shadow-md hover:bg-[#C97A4B] focus:outline-none focus:ring-2 focus:ring-[#D98A5B] focus:ring-opacity-75">
         Zoom In
       </button>
     </div>
@@ -207,26 +220,26 @@
   <!-- Chart Display Area -->
   <div class="flex flex-wrap justify-center items-start">
     <!-- Front Chart Container -->
-    <div class="chart-wrapper flex flex-col items-center p-4 bg-gray-100 rounded-lg shadow-md m-4">
-      <h3 class="text-xl font-semibold mb-4 text-gray-800">Front Chart (Click to toggle color)</h3>
+    <div class="chart-wrapper flex flex-col items-center p-4 bg-[#FCFCF8] rounded-lg shadow-md m-4">
+      <h3 class="text-xl font-semibold mb-4 text-[#4F6B4D]">Front Chart (Click to toggle color)</h3>
       <div id="frontChartGrid" class="chart-grid-container"></div>
-      <button id="inverseFrontBtn" class="mt-4 px-4 py-2 bg-purple-500 text-white rounded-md shadow-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75">
+      <button id="inverseFrontBtn" class="mt-4 px-4 py-2 bg-[#88AA80] text-white rounded-md shadow-md hover:bg-[#789A70] focus:outline-none focus:ring-2 focus:ring-[#88AA80] focus:ring-opacity-75">
         Inverse Front Colors
       </button>
     </div>
 
     <!-- Back Chart Container -->
-    <div class="chart-wrapper flex flex-col items-center p-4 bg-gray-100 rounded-lg shadow-md m-4">
-      <h3 class="text-xl font-semibold mb-4 text-gray-800">Back Chart (Click to toggle color)</h3>
+    <div class="chart-wrapper flex flex-col items-center p-4 bg-[#FCFCF8] rounded-lg shadow-md m-4">
+      <h3 class="text-xl font-semibold mb-4 text-[#4F6B4D]">Back Chart (Click to toggle color)</h3>
       <div id="backChartGrid" class="chart-grid-container"></div>
-      <button id="inverseBackBtn" class="mt-4 px-4 py-2 bg-purple-500 text-white rounded-md shadow-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75">
+      <button id="inverseBackBtn" class="mt-4 px-4 py-2 bg-[#88AA80] text-white rounded-md shadow-md hover:bg-[#789A70] focus:outline-none focus:ring-2 focus:ring-[#88AA80] focus:ring-opacity-75">
         Inverse Back Colors
       </button>
     </div>
 
     <!-- Combined Chart Container -->
-    <div class="chart-wrapper flex flex-col items-center p-4 bg-gray-100 rounded-lg shadow-md m-4">
-      <h3 class="text-xl font-semibold mb-4 text-gray-800">Combined Chart (Read-Only)</h3>
+    <div class="chart-wrapper flex flex-col items-center p-4 bg-[#FCFCF8] rounded-lg shadow-md m-4">
+      <h3 class="text-xl font-semibold mb-4 text-[#4F6B4D]">Combined Chart (Read-Only)</h3>
       <div id="combinedChartGrid" class="chart-grid-container"></div>
     </div>
   </div>
@@ -238,34 +251,34 @@
       type="text"
       id="patternTitleInput"
       placeholder="e.g., My Custom Pattern"
-      class="w-64 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+      class="w-64 p-2 border border-[#A19E92] rounded-md shadow-sm focus:ring-[#D98A5B] focus:border-[#D98A5B]"
     />
   </div>
 
   <!-- Action Controls -->
   <div class="flex flex-col md:flex-row justify-center items-center mt-8 space-y-4 md:space-y-0 md:space-x-4">
-    <button id="generateInstructionsBtn" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-md shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-opacity-75 transition duration-150 ease-in-out">
+    <button id="generateInstructionsBtn" class="px-6 py-3 bg-[#6A8D60] text-white font-semibold rounded-md shadow-md hover:bg-[#5B7A50] focus:outline-none focus:ring-2 focus:ring-[#6A8D60] focus:ring-opacity-75 transition duration-150 ease-in-out">
       Generate Written Instructions
     </button>
-    <button id="downloadInstructionsBtn" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-75 transition duration-150 ease-in-out">
+    <button id="downloadInstructionsBtn" class="px-6 py-3 bg-[#A19E92] text-white font-semibold rounded-md shadow-md hover:bg-[#918E82] focus:outline-none focus:ring-2 focus:ring-[#A19E92] focus:ring-opacity-75 transition duration-150 ease-in-out">
       Download Written Instructions (PDF)
     </button>
-    <button id="downloadCombinedDocumentBtn" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-md shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-opacity-75 transition duration-150 ease-in-out">
+    <button id="downloadCombinedDocumentBtn" class="px-6 py-3 bg-[#C2A79D] text-white font-semibold rounded-md shadow-md hover:bg-[#B2978D] focus:outline-none focus:ring-2 focus:ring-[#C2A79D] focus:ring-opacity-75 transition duration-150 ease-in-out">
       Download Full Pattern (PDF)
     </button>
-    <button id="downloadChartBtn" class="px-6 py-3 bg-orange-500 text-white font-semibold rounded-md shadow-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-75 transition duration-150 ease-in-out">
+    <button id="downloadChartBtn" class="px-6 py-3 bg-[#D98A5B] text-white font-semibold rounded-md shadow-md hover:bg-[#C97A4B] focus:outline-none focus:ring-2 focus:ring-[#D98A5B] focus:ring-opacity-75 transition duration-150 ease-in-out">
       Download Combined Chart (PDF)
     </button>
-    <button id="restartBtn" class="px-6 py-3 bg-red-500 text-white font-semibold rounded-md shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-150 ease-in-out">
+    <button id="restartBtn" class="px-6 py-3 bg-[#CC7070] text-white font-semibold rounded-md shadow-md hover:bg-[#BC6060] focus:outline-none focus:ring-2 focus:ring-[#CC7070] focus:ring-opacity-75 transition duration-150 ease-in-out">
       Restart Charts
     </button>
   </div>
 
   <!-- Written Instructions Output Area -->
   <div id="writtenInstructionsOutput" class="hidden">
-    <h3 class="text-xl font-semibold mb-4 text-gray-800">Generated Written Instructions:</h3>
-    <pre id="instructionsText" class="text-sm text-gray-700"></pre>
-    <p class="mt-4 text-gray-600">
+    <h3 class="text-xl font-semibold mb-4 text-[#4F6B4D]">Generated Written Instructions:</h3>
+    <pre id="instructionsText" class="text-sm text-[#4F6B4D]"></pre>
+    <p class="mt-4 text-[#6B7F6C]">
       <strong>Instructions Legend:</strong><br>
       - "KB/PW": Knit Black on Front, Purl White on Back.<br>
       - "KW/PB": Knit White on Front, Purl Black on Back.<br>
@@ -274,18 +287,18 @@
     </p>
   </div>
 
-  <div class="text-center mt-10 p-4 bg-white rounded-lg shadow-lg max-w-2xl mx-auto">
-    <h2 class="text-2xl font-semibold mb-4 text-indigo-700">Understanding the Combined Chart:</h2>
-    <p class="text-gray-700 mb-2">
+  <div class="text-center mt-10 p-4 bg-[#FCFCF8] rounded-lg shadow-lg max-w-2xl mx-auto">
+    <h2 class="text-2xl font-semibold mb-4 text-[#4F6B4D]">Understanding the Combined Chart:</h2>
+    <p class="text-[#6B7F6C] mb-2">
       This version of the combined chart uses simple color codes:
     </p>
-    <ul class="list-disc list-inside text-left text-gray-600 mx-auto w-fit">
-      <li><span class="inline-block w-4 h-4 bg-black border border-gray-400 rounded-sm mr-2 align-middle"></span><span class="font-medium">Black cell with White dot (⚪):</span> Front is Black, Back is White. (e.g., Knit with Black yarn, Purl with White yarn)</li>
-      <li><span class="inline-block w-4 h-4 bg-white border border-gray-400 rounded-sm mr-2 align-middle"></span><span class="font-medium">White cell with Black dot (⚫):</span> Front is White, Back is Black. (e.g., Knit with White yarn, Purl with Black yarn)</li>
-      <li><span class="inline-block w-4 h-4 bg-black border border-gray-400 rounded-sm mr-2 align-middle"></span><span class="font-medium">Pure Black cell:</span> Both Front and Back are Black. (e.g., Knit with Black, Purl with Black)</li>
-      <li><span class="inline-block w-4 h-4 bg-white border border-gray-400 rounded-sm mr-2 align-middle"></span><span class="font-medium">Pure White cell:</span> Both Front and Back are White. (e.g., Knit with White, Purl with White)</li>
+    <ul class="list-disc list-inside text-left text-[#6B7F6C] mx-auto w-fit">
+      <li><span class="inline-block w-4 h-4 bg-black border border-[#A19E92] rounded-sm mr-2 align-middle"></span><span class="font-medium">Black cell with White dot (⚪):</span> Front is Black, Back is White. (e.g., Knit with Black yarn, Purl with White yarn)</li>
+      <li><span class="inline-block w-4 h-4 bg-white border border-[#A19E92] rounded-sm mr-2 align-middle"></span><span class="font-medium">White cell with Black dot (⚫):</span> Front is White, Back is Black. (e.g., Knit with White yarn, Purl with Black yarn)</li>
+      <li><span class="inline-block w-4 h-4 bg-black border border-[#A19E92] rounded-sm mr-2 align-middle"></span><span class="font-medium">Pure Black cell:</span> Both Front and Back are Black. (e.g., Knit with Black, Purl with Black)</li>
+      <li><span class="inline-block w-4 h-4 bg-white border border-[#A19E92] rounded-sm mr-2 align-middle"></span><span class="font-medium">Pure White cell:</span> Both Front and Back are White. (e.g., Knit with White, Purl with White)</li>
     </ul>
-    <p class="text-gray-700 mt-4">
+    <p class="text-[#6B7F6C] mt-4">
       The dot representation on the combined chart clarifies the individual knit and purl stitches when the front and back patterns differ.
     </p>
   </div>
@@ -303,6 +316,14 @@
     let currentDotSize = 12;
     let currentDotFontSize = 0.75;
     let currentNumberFontSize = '0.7rem';
+
+    // Define custom color variables for easier management and consistency
+    const COLOR_BLACK_CUSTOM = '#000'; // Pure Black
+    const COLOR_WHITE_CUSTOM = '#fff'; // Pure White
+    const COLOR_GRID_BORDER = '#A19E92'; // Subtle grey-green-brown for cell borders
+    const COLOR_NUMBER_TEXT = '#6B7F6C'; // Medium forest green for number text
+    const COLOR_GRID_BACKGROUND = '#C6B2A8'; // Muted rosy brown for grid background
+    const COLOR_CORNER_HEADER = '#E0EEDA'; // Light green-beige for corner headers / background of numbers
 
     const MIN_CELL_SIZE = 8;
     const MAX_CELL_SIZE = 60;
@@ -379,6 +400,7 @@
                     cellDiv.addEventListener('click', () => toggleCell(chartType, patternRIdx, patternCIdx));
                 }
 
+                // Use pure black/white for chart rendering
                 if (chartType === 'front') {
                     cellDiv.classList.add(frontChart[patternRIdx][patternCIdx] ? 'bg-black' : 'bg-white');
                 } else if (chartType === 'back') {
@@ -416,7 +438,8 @@
       targetChart[patternRIdx][patternCIdx] = !targetChart[patternRIdx][patternCIdx];
       const cellDiv = document.getElementById(targetElementId).querySelector(`[data-pattern-row="${patternRIdx}"][data-pattern-col="${patternCIdx}"]`);
       if (cellDiv) {
-          cellDiv.classList.remove('bg-black', 'bg-white', 'bg-gray-200');
+          // Use pure black/white for chart rendering
+          cellDiv.classList.remove('bg-black', 'bg-white');
           cellDiv.classList.add(targetChart[patternRIdx][patternCIdx] ? 'bg-black' : 'bg-white');
       }
       generateAndRenderCombinedChart();
@@ -445,22 +468,24 @@
         row.forEach((cellValue, cIdx) => {
           const cellDiv = combinedChartGridElement.querySelector(`[data-pattern-row="${rIdx}"][data-pattern-col="${cIdx}"]`);
           if (cellDiv) {
-            let backgroundColorClass = 'bg-gray-200';
+            let backgroundColorClass = '';
             let dotContentHTML = '';
 
+            // Use pure black/white for chart rendering
             if (cellValue === 'BB' || cellValue === 'BW') {
               backgroundColorClass = 'bg-black';
             } else if (cellValue === 'WW' || cellValue === 'WB') {
               backgroundColorClass = 'bg-white';
             }
 
-            cellDiv.classList.remove('bg-black', 'bg-white', 'bg-gray-200');
+            cellDiv.classList.remove('bg-black', 'bg-white');
             cellDiv.classList.add(backgroundColorClass);
 
+            // Use pure black/white for dot colors
             if (cellValue === 'BW') {
-              dotContentHTML = '<span class="dot-container text-white">⚪</span>';
+              dotContentHTML = `<span class="dot-container text-white">⚪</span>`;
             } else if (cellValue === 'WB') {
-              dotContentHTML = '<span class="dot-container text-black">⚫</span>';
+              dotContentHTML = `<span class="dot-container text-black">⚫</span>`;
             }
             cellDiv.innerHTML = dotContentHTML;
           }
@@ -506,12 +531,12 @@
         ctx.font = `${scaledNumberFontSizePx}px Inter`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#4b5563';
+        ctx.fillStyle = COLOR_NUMBER_TEXT;
 
         // Draw Blank Top-Left Corner
-        ctx.fillStyle = '#f3f4f6';
+        ctx.fillStyle = COLOR_CORNER_HEADER;
         ctx.fillRect(0, 0, scaledCellSize, scaledCellSize);
-        ctx.strokeStyle = '#9ca3af';
+        ctx.strokeStyle = COLOR_GRID_BORDER;
         ctx.lineWidth = 1 * renderScale;
         ctx.strokeRect(0, 0, scaledCellSize, scaledCellSize);
 
@@ -520,13 +545,13 @@
             const rDisplay = rows - rIdx;
             const canvasY = rIdx * scaledCellSize;
 
-            ctx.fillStyle = '#f3f4f6';
+            ctx.fillStyle = COLOR_CORNER_HEADER;
             ctx.fillRect(0, canvasY, scaledCellSize, scaledCellSize);
-            ctx.strokeStyle = '#9ca3af';
+            ctx.strokeStyle = COLOR_GRID_BORDER;
             ctx.lineWidth = 1 * renderScale;
             ctx.strokeRect(0, canvasY, scaledCellSize, scaledCellSize);
 
-            ctx.fillStyle = '#4b5563';
+            ctx.fillStyle = COLOR_NUMBER_TEXT;
             ctx.fillText(rDisplay.toString(), scaledCellSize / 2, canvasY + scaledCellSize / 2);
         }
 
@@ -537,27 +562,27 @@
                 const y = rIdx * scaledCellSize;
 
                 if (cellValue === 'BB' || cellValue === 'BW') {
-                    ctx.fillStyle = '#000';
+                    ctx.fillStyle = COLOR_BLACK_CUSTOM; // Use #000
                 } else if (cellValue === 'WW' || cellValue === 'WB') {
-                    ctx.fillStyle = '#fff';
+                    ctx.fillStyle = COLOR_WHITE_CUSTOM; // Use #fff
                 } else {
-                    ctx.fillStyle = '#e5e7eb';
+                    ctx.fillStyle = '#e5e7eb'; // Fallback for unexpected values
                 }
                 ctx.fillRect(x, y, scaledCellSize, scaledCellSize);
 
-                ctx.strokeStyle = '#9ca3af';
+                ctx.strokeStyle = COLOR_GRID_BORDER;
                 ctx.lineWidth = 1 * renderScale;
                 ctx.strokeRect(x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, scaledCellSize - ctx.lineWidth, scaledCellSize - ctx.lineWidth);
 
                 if (cellValue === 'BW') {
-                    ctx.fillStyle = '#fff';
+                    ctx.fillStyle = COLOR_WHITE_CUSTOM; // Use #fff for white dot
                     ctx.beginPath();
                     const dotCenterX = x + scaledCellSize / 2;
                     const dotCenterY = y + scaledCellSize / 2;
                     ctx.arc(dotCenterX, dotCenterY, scaledDotRadius, 0, Math.PI * 2);
                     ctx.fill();
                 } else if (cellValue === 'WB') {
-                    ctx.fillStyle = '#000';
+                    ctx.fillStyle = COLOR_BLACK_CUSTOM; // Use #000 for black dot
                     ctx.beginPath();
                     const dotCenterX = x + scaledCellSize / 2;
                     const dotCenterY = y + scaledCellSize / 2;
@@ -572,13 +597,13 @@
         for (let cDisplay = cols; cDisplay >= 1; cDisplay--) {
             const canvasX = (cols - cDisplay + 1) * scaledCellSize;
 
-            ctx.fillStyle = '#f3f4f6';
+            ctx.fillStyle = COLOR_CORNER_HEADER;
             ctx.fillRect(canvasX, colNumbersY, scaledCellSize, scaledCellSize);
-            ctx.strokeStyle = '#9ca3af';
+            ctx.strokeStyle = COLOR_GRID_BORDER;
             ctx.lineWidth = 1 * renderScale;
             ctx.strokeRect(canvasX, colNumbersY, scaledCellSize, scaledCellSize);
 
-            ctx.fillStyle = '#4b5563';
+            ctx.fillStyle = COLOR_NUMBER_TEXT;
             ctx.fillText(cDisplay.toString(), canvasX + scaledCellSize / 2, colNumbersY + scaledCellSize / 2);
         }
 
@@ -598,11 +623,13 @@
 
         if (title) {
             doc.setFontSize(18);
+            doc.setTextColor('#3D4C3A'); // Darker forest green for titles
             doc.text(title, pdfWidth / 2, currentY, { align: 'center' });
             currentY += 30;
         }
 
         doc.setFontSize(14);
+        doc.setTextColor('#3D4C3A'); // Darker forest green
         doc.text("Double Knitting Combined Chart", pdfWidth / 2, currentY, { align: 'center' });
         currentY += 20;
 
@@ -667,6 +694,9 @@
         const doc = new jsPDF();
         let currentY = 20;
 
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor('#3D4C3A'); // Darker forest green
+
         if (title) {
             doc.setFontSize(18);
             doc.text(title, doc.internal.pageSize.getWidth() / 2, currentY, { align: 'center' });
@@ -712,8 +742,11 @@
         const doc = new jsPDF('portrait', 'pt', 'a4');
         const pdfWidth = doc.internal.pageSize.getWidth();
         const pdfHeight = doc.internal.pageSize.getHeight();
-        const margin = 36; // 0.5 inch margin, approx 36pt
+        const margin = 36;
         let currentY = margin;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor('#3D4C3A'); // Darker forest green
 
         // Add Title
         if (title) {
@@ -725,7 +758,7 @@
         // Add Main Heading for the document
         doc.setFontSize(14);
         doc.text("Double Knitting Pattern: Visual Chart & Written Instructions", pdfWidth / 2, currentY, { align: 'center' });
-        currentY += 40; // More space after main heading
+        currentY += 40;
 
         // Add Chart Section Heading and Description
         doc.setFontSize(16);
@@ -738,11 +771,10 @@
         // Add Chart Image
         const imgProps = doc.getImageProperties(imageUrl);
         const imgRatio = imgProps.width / imgProps.height;
-        let imgWidth = pdfWidth - (2 * margin); // Use full available width
+        let imgWidth = pdfWidth - (2 * margin);
         let imgHeight = imgWidth / imgRatio;
 
-        // Scale down if image is too tall for the remaining page
-        const maxImgHeight = pdfHeight - currentY - margin - (doc.getFontSize() * 5); // Leave space for instructions text
+        const maxImgHeight = pdfHeight - currentY - margin - (doc.getFontSize() * 5);
         if (imgHeight > maxImgHeight) {
             imgHeight = maxImgHeight;
             imgWidth = imgHeight * imgRatio;
@@ -750,11 +782,10 @@
 
         const imgX = (pdfWidth - imgWidth) / 2;
         doc.addImage(imageUrl, 'PNG', imgX, currentY, imgWidth, imgHeight);
-        currentY += imgHeight + 30; // Move Y below the image + some padding
+        currentY += imgHeight + 30;
 
         // Add Written Instructions Section Heading
-        // Check if new page is needed before adding instructions
-        if (currentY + (doc.getFontSize() * 2) > pdfHeight - margin) {
+        if (currentY + 20 > pdfHeight - margin) {
             doc.addPage();
             currentY = margin;
         }
@@ -767,18 +798,17 @@
         const textLines = doc.splitTextToSize(instructions, pdfWidth - (2 * margin));
         
         for (let i = 0; i < textLines.length; i++) {
-            if (currentY + doc.getLineHeight() > pdfHeight - margin) { // Check if line will overflow
+            if (currentY + doc.getLineHeight() > pdfHeight - margin) {
                 doc.addPage();
                 currentY = margin;
             }
             doc.text(textLines[i], margin, currentY);
             currentY += doc.getLineHeight();
         }
-        currentY += 10; // Extra space after instructions
+        currentY += 10;
 
         // Add Instructions Legend
-        // Check if new page is needed before adding legend
-        if (currentY + (doc.getFontSize() * 5) > pdfHeight - margin) { // Approx height for legend
+        if (currentY + 60 > pdfHeight - margin) {
             doc.addPage();
             currentY = margin;
         }
@@ -833,7 +863,8 @@
                 targetChart[r][c] = !targetChart[r][c];
                 const cellDiv = document.getElementById(targetElementId).querySelector(`[data-pattern-row="${r}"][data-pattern-col="${c}"]`);
                 if (cellDiv) {
-                    cellDiv.classList.remove('bg-black', 'bg-white', 'bg-gray-200');
+                    // Use pure black/white for chart rendering
+                    cellDiv.classList.remove('bg-black', 'bg-white');
                     cellDiv.classList.add(targetChart[r][c] ? 'bg-black' : 'bg-white');
                 }
             }
