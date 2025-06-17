@@ -19,7 +19,7 @@
     - Zoom Control -> Explore/Context -> Buttons (HTML Button) -> Click to adjust cell size -> Adaptability for detail/overview -> Vanilla JS, CSS Variables
     - Image Download/Copy -> Output -> Buttons (HTML Button) -> Click to save/copy image -> User utility, sharing -> Canvas API (for dots), html2canvas (for overall capture)
     - Restart -> Control -> Button (HTML Button) -> Click to reset patterns -> User convenience -> Vanilla JS
-    - Chart Labeling -> Inform -> Column/Row Numbers (HTML Divs/Spans directly in grid) -> Dynamically rendered, respond to zoom -> Improved clarity for knitting patterns (right-to-left, bottom-to-top for rows, right-to-left for cols at bottom) -> Vanilla JS
+    - Chart Labeling -> Inform -> Column/Row Numbers (HTML Divs/Spans directly in grid) -> Dynamically rendered, respond to zoom -> Improved clarity for knitting patterns (right-to-left for cols at bottom, bottom-to-top for rows) -> Vanilla JS
     - Information Architecture is designed to be highly interactive and task-oriented, allowing direct manipulation of input and immediate viewing of output.
   -->
   <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
@@ -299,52 +299,59 @@
 
         // Set grid template columns: 1 for row numbers, then 'cols' for pattern cells
         containerElement.style.gridTemplateColumns = `var(--cell-size) repeat(${cols}, var(--cell-size))`;
-        // Set grid template rows: 'rows' for pattern cells, then 1 for column numbers
+        // Set grid template rows: 'rows' for pattern cells, then 1 for column numbers (at the bottom)
         containerElement.style.gridTemplateRows = `repeat(${rows}, var(--cell-size)) var(--cell-size)`;
 
-        // --- Render Main Pattern Area and Row Headers ---
-        for (let r = rows; r >= 1; r--) { // Loop for rows (Bottom to Top for numbering)
+        // --- Render Main Pattern Area and Row Headers (top to bottom) ---
+        // Rows in chartData are 0-indexed (top to bottom). Displayed numbers are 1-indexed (bottom to top).
+        // So, patternRowIndex (0 to rows-1) corresponds to displayedRow (rows to 1).
+        // For displayed row 'r', the internal index is 'rows - r'.
+        for (let rDisplay = rows; rDisplay >= 1; rDisplay--) {
+            const patternRIdx = rows - rDisplay; // Convert display row to 0-indexed pattern row
+
             // Row Header (first column of this logical row)
             const rowHeader = document.createElement('div');
             rowHeader.classList.add('number-header');
-            rowHeader.textContent = r; // Display r (1-indexed)
+            rowHeader.textContent = rDisplay; // Display r (1-indexed)
             containerElement.appendChild(rowHeader);
 
             // Pattern Cells for this row
-            for (let c = 1; c <= cols; c++) { // Loop for columns (Left to Right for drawing)
+            for (let cDisplay = 1; cDisplay <= cols; cDisplay++) { // Loop for columns (Left to Right for drawing)
+                const patternCIdx = cDisplay - 1; // Convert display col to 0-indexed pattern col
+
                 const cellDiv = document.createElement('div');
                 cellDiv.classList.add('grid-cell');
                 // Store 0-indexed row/col for internal data array reference
-                cellDiv.dataset.patternRow = r - 1; // 0-indexed row for internal data
-                cellDiv.dataset.patternCol = c - 1; // 0-indexed col for internal data
+                cellDiv.dataset.patternRow = patternRIdx;
+                cellDiv.dataset.patternCol = patternCIdx;
 
                 if (enableEdit) {
                     cellDiv.classList.add('grid-cell-editable');
-                    cellDiv.addEventListener('click', () => toggleCell(chartType, r - 1, c - 1));
+                    cellDiv.addEventListener('click', () => toggleCell(chartType, patternRIdx, patternCIdx));
                 }
 
                 // Set initial color for front/back charts based on their data
                 if (chartType === 'front') {
-                    cellDiv.classList.add(frontChart[r - 1][c - 1] ? 'bg-black' : 'bg-white');
+                    cellDiv.classList.add(frontChart[patternRIdx][patternCIdx] ? 'bg-black' : 'bg-white');
                 } else if (chartType === 'back') {
-                    cellDiv.classList.add(backChart[r - 1][c - 1] ? 'bg-black' : 'bg-white');
+                    cellDiv.classList.add(backChart[patternRIdx][patternCIdx] ? 'bg-black' : 'bg-white');
                 }
                 // Combined chart cells will be updated by generateAndRenderCombinedChart after their initial render
                 containerElement.appendChild(cellDiv);
             }
         }
 
-        // --- Render Bottom Row: Blank Corner + Column Headers ---
+        // --- Render Bottom Row: Blank Corner + Column Headers (right to left) ---
         // Blank bottom-left corner cell (occupies the space of the row number in the bottom row)
         const bottomLeftCornerDiv = document.createElement('div');
         bottomLeftCornerDiv.classList.add('corner-header');
         containerElement.appendChild(bottomLeftCornerDiv);
 
         // Column headers (Right to Left: cols, cols-1, ..., 1)
-        for (let c = cols; c >= 1; c--) {
+        for (let cDisplay = cols; cDisplay >= 1; cDisplay--) { // Loop for columns (Right to Left for numbering)
             const colHeader = document.createElement('div');
             colHeader.classList.add('number-header');
-            colHeader.textContent = c; // Display c (1-indexed)
+            colHeader.textContent = cDisplay; // Display c (1-indexed)
             containerElement.appendChild(colHeader);
         }
     }
@@ -444,20 +451,53 @@
         console.log(`Zoom updated to cell size: ${currentCellSize}px, dot size: ${currentDotSize}px, font size: ${currentDotFontSize}rem, number font size: ${currentNumberFontSize}.`);
     }
 
+    // Function to draw the combined chart onto a hidden canvas for precise image generation
     function drawCombinedChartToCanvas() {
         const canvas = document.createElement('canvas');
         const renderScale = 4; // Higher scale for better resolution
         const scaledCellSize = currentCellSize * renderScale;
         const scaledDotRadius = (currentDotSize / 2) * renderScale;
+        const scaledNumberFontSizePx = parseFloat(currentNumberFontSize) * 16 * renderScale; // Convert rem to px and scale
 
-        canvas.width = cols * scaledCellSize;
-        canvas.height = rows * scaledCellSize;
+        // Canvas dimensions need to account for the number row and column
+        canvas.width = (cols + 1) * scaledCellSize; // +1 for the row number column on the left
+        canvas.height = (rows + 1) * scaledCellSize; // +1 for the column number row at the bottom
         const ctx = canvas.getContext('2d');
 
-        combinedChart.forEach((row, rIdx) => {
-            row.forEach((cellValue, cIdx) => {
-                const x = cIdx * scaledCellSize;
-                const y = rIdx * scaledCellSize;
+        // Set font for numbers
+        ctx.font = `${scaledNumberFontSizePx}px Inter`; // Use "Inter" font or a fallback
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#4b5563'; // gray-700 for numbers text
+
+        // Draw Blank Top-Left Corner
+        ctx.fillStyle = '#f3f4f6'; // background for numbers
+        ctx.fillRect(0, 0, scaledCellSize, scaledCellSize);
+        ctx.strokeStyle = '#9ca3af'; // border color
+        ctx.lineWidth = 1 * renderScale;
+        ctx.strokeRect(0, 0, scaledCellSize, scaledCellSize);
+
+        // Draw Row Numbers (left-most column) - 1-indexed, Bottom to Top for display
+        // Loop from the top-most pattern row (0-indexed) down to the bottom-most pattern row
+        for (let rIdx = 0; rIdx < rows; rIdx++) {
+            const rDisplay = rows - rIdx; // Convert 0-indexed pattern row to 1-indexed display row (bottom to top)
+            const canvasY = rIdx * scaledCellSize; // Y position on canvas
+
+            ctx.fillStyle = '#f3f4f6'; // bg-gray-100 for numbers background
+            ctx.fillRect(0, canvasY, scaledCellSize, scaledCellSize); // Background for number cell
+            ctx.strokeStyle = '#9ca3af';
+            ctx.lineWidth = 1 * renderScale;
+            ctx.strokeRect(0, canvasY, scaledCellSize, scaledCellSize); // Border for number cell
+
+            ctx.fillStyle = '#4b5563'; // Text color
+            ctx.fillText(rDisplay.toString(), scaledCellSize / 2, canvasY + scaledCellSize / 2);
+        }
+
+        // Draw Pattern Cells (offset by 1 column for row numbers, and 0 for row offset as they fill top part)
+        combinedChart.forEach((row, rIdx) => { // rIdx is 0-indexed pattern row (top to bottom)
+            row.forEach((cellValue, cIdx) => { // cIdx is 0-indexed pattern col (left to right)
+                const x = (cIdx + 1) * scaledCellSize; // Offset by one column for row numbers
+                const y = rIdx * scaledCellSize; // Top-most rows for pattern data
 
                 // Draw cell background
                 if (cellValue === 'BB' || cellValue === 'BW') {
@@ -492,6 +532,22 @@
                 }
             });
         });
+
+        // Draw Column Numbers (bottom-most row) - 1-indexed, Right to Left for display
+        const colNumbersY = rows * scaledCellSize; // Y position for the column number row
+        for (let cDisplay = cols; cDisplay >= 1; cDisplay--) {
+            const canvasX = (cols - cDisplay + 1) * scaledCellSize; // X position on canvas (offset by 1 for row numbers)
+
+            ctx.fillStyle = '#f3f4f6'; // bg-gray-100 for numbers background
+            ctx.fillRect(canvasX, colNumbersY, scaledCellSize, scaledCellSize); // Background for number cell
+            ctx.strokeStyle = '#9ca3af';
+            ctx.lineWidth = 1 * renderScale;
+            ctx.strokeRect(canvasX, colNumbersY, scaledCellSize, scaledCellSize); // Border for number cell
+
+            ctx.fillStyle = '#4b5563'; // Text color
+            ctx.fillText(cDisplay.toString(), canvasX + scaledCellSize / 2, colNumbersY + scaledCellSize / 2);
+        }
+
         return canvas;
     }
 
@@ -559,11 +615,10 @@
             targetElementId = 'backChartGrid';
         }
 
-        // Inverse the data
+        // Inverse the data and update DOM
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
                 targetChart[r][c] = !targetChart[r][c];
-                // Update the DOM cell's color
                 const cellDiv = document.getElementById(targetElementId).querySelector(`[data-pattern-row="${r}"][data-pattern-col="${c}"]`);
                 if (cellDiv) {
                     cellDiv.classList.remove('bg-black', 'bg-white', 'bg-gray-200');
