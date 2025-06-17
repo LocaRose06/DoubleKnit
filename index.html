@@ -8,6 +8,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- html2canvas CDN for converting the rendered HTML to image (for download/copy) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- jsPDF CDN for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <!-- Chosen Palette: Warm Neutrals with Subtle Indigo/Green/Red Accents -->
   <!-- Application Structure Plan: The application uses a three-column dashboard-like structure for its main content (Front Chart, Back Chart, Combined Chart). This allows users to simultaneously view their input patterns and the generated output, fostering direct comparison and immediate feedback. Controls for dimensions, zoom, and chart actions are positioned at the top for easy access. This structure was chosen for its intuitive visual flow, enabling users to easily explore the interactive data (pattern toggling) and synthesize the results (combined chart). -->
@@ -20,6 +22,7 @@
     - Image Download/Copy -> Output -> Buttons (HTML Button) -> Click to save/copy image -> User utility, sharing -> Canvas API (for dots), html2canvas (for overall capture)
     - Restart -> Control -> Button (HTML Button) -> Click to reset patterns -> User convenience -> Vanilla JS
     - Chart Labeling -> Inform -> Column/Row Numbers (HTML Divs/Spans directly in grid) -> Dynamically rendered, respond to zoom -> Improved clarity for knitting patterns (right-to-left for cols at bottom, bottom-to-top for rows) -> Vanilla JS
+    - Written Instructions -> Inform/Action -> Text area (HTML Div) & Buttons (HTML Button) -> Click to generate/download text or combined document -> Provides alternative pattern format -> Vanilla JS
     - Information Architecture is designed to be highly interactive and task-oriented, allowing direct manipulation of input and immediate viewing of output.
   -->
   <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
@@ -141,6 +144,25 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
     }
+
+    /* Styles for Written Instructions Output */
+    #writtenInstructionsOutput {
+        white-space: pre-wrap; /* Preserves whitespace and wraps text */
+        font-family: 'Courier New', Courier, monospace; /* Monospace font for pattern text */
+        background-color: #f8fafc; /* bg-gray-50 */
+        border: 1px solid #e2e8f0; /* border-gray-200 */
+        border-radius: 0.5rem; /* rounded-lg */
+        padding: 1.5rem; /* p-6 */
+        margin-top: 2.5rem; /* mt-10 */
+        max-width: 42rem; /* max-w-xl (approx) */
+        margin-left: auto;
+        margin-right: auto;
+        color: #334155; /* text-slate-700 */
+        font-size: 0.875rem; /* text-sm */
+        line-height: 1.5;
+        overflow-x: auto; /* Allow horizontal scroll for long lines */
+        min-height: 50px; /* Ensure it's visible even when empty */
+    }
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200 p-8 font-inter text-gray-800">
@@ -209,17 +231,47 @@
     </div>
   </div>
 
-  <!-- Download/Copy/Restart Controls -->
+  <!-- Optional Title Input -->
+  <div class="flex justify-center items-center mb-8 space-x-4">
+    <label for="patternTitleInput" class="font-medium text-lg">Pattern Title (Optional):</label>
+    <input
+      type="text"
+      id="patternTitleInput"
+      placeholder="e.g., My Custom Pattern"
+      class="w-64 p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+    />
+  </div>
+
+  <!-- Action Controls -->
   <div class="flex flex-col md:flex-row justify-center items-center mt-8 space-y-4 md:space-y-0 md:space-x-4">
-    <button id="downloadChartBtn" class="px-6 py-3 bg-green-500 text-white font-semibold rounded-md shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-150 ease-in-out">
-      Download Combined Chart (PNG)
+    <button id="generateInstructionsBtn" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-md shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-opacity-75 transition duration-150 ease-in-out">
+      Generate Written Instructions
     </button>
-    <button id="copyChartBtn" class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-md shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-150 ease-in-out">
-      Copy Combined Chart (Image)
+    <button id="downloadInstructionsBtn" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-opacity-75 transition duration-150 ease-in-out">
+      Download Written Instructions (PDF)
+    </button>
+    <button id="downloadCombinedDocumentBtn" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-md shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-opacity-75 transition duration-150 ease-in-out">
+      Download Full Pattern (PDF)
+    </button>
+    <button id="downloadChartBtn" class="px-6 py-3 bg-orange-500 text-white font-semibold rounded-md shadow-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-75 transition duration-150 ease-in-out">
+      Download Combined Chart (PDF)
     </button>
     <button id="restartBtn" class="px-6 py-3 bg-red-500 text-white font-semibold rounded-md shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-150 ease-in-out">
       Restart Charts
     </button>
+  </div>
+
+  <!-- Written Instructions Output Area -->
+  <div id="writtenInstructionsOutput" class="hidden">
+    <h3 class="text-xl font-semibold mb-4 text-gray-800">Generated Written Instructions:</h3>
+    <pre id="instructionsText" class="text-sm text-gray-700"></pre>
+    <p class="mt-4 text-gray-600">
+      <strong>Instructions Legend:</strong><br>
+      - "KB/PW": Knit Black on Front, Purl White on Back.<br>
+      - "KW/PB": Knit White on Front, Purl Black on Back.<br>
+      - "KBB": Knit Black on Both Front and Back.<br>
+      - "KWW": Knit White on Both Front and Back.
+    </p>
   </div>
 
   <div class="text-center mt-10 p-4 bg-white rounded-lg shadow-lg max-w-2xl mx-auto">
@@ -247,14 +299,14 @@
     let frontChart = [];
     let backChart = [];
     let combinedChart = [];
-    let currentCellSize = 24; // Initial cell size in pixels
-    let currentDotSize = 12; // Initial dot size, half of cell-size
-    let currentDotFontSize = 0.75; // Initial font size in rem for dots
-    let currentNumberFontSize = '0.7rem'; // Initial font size for numbers
+    let currentCellSize = 24;
+    let currentDotSize = 12;
+    let currentDotFontSize = 0.75;
+    let currentNumberFontSize = '0.7rem';
 
     const MIN_CELL_SIZE = 8;
     const MAX_CELL_SIZE = 60;
-    const ZOOM_STEP = 4; // Pixel step for cell size
+    const ZOOM_STEP = 4;
 
     const frontChartGridElement = document.getElementById('frontChartGrid');
     const backChartGridElement = document.getElementById('backChartGrid');
@@ -264,11 +316,18 @@
     const zoomInBtn = document.getElementById('zoomInBtn');
     const zoomOutBtn = document.getElementById('zoomOutBtn');
     const downloadChartBtn = document.getElementById('downloadChartBtn');
-    const copyChartBtn = document.getElementById('copyChartBtn');
     const restartBtn = document.getElementById('restartBtn');
     const inverseFrontBtn = document.getElementById('inverseFrontBtn');
     const inverseBackBtn = document.getElementById('inverseBackBtn');
+    const generateInstructionsBtn = document.getElementById('generateInstructionsBtn');
+    const downloadInstructionsBtn = document.getElementById('downloadInstructionsBtn');
+    const downloadCombinedDocumentBtn = document.getElementById('downloadCombinedDocumentBtn');
+    const writtenInstructionsOutput = document.getElementById('writtenInstructionsOutput');
+    const instructionsText = document.getElementById('instructionsText');
+    const patternTitleInput = document.getElementById('patternTitleInput');
     const messageBox = document.getElementById('messageBox');
+
+    const { jsPDF } = window.jspdf;
 
     function showMessage(message, duration = 3000) {
         messageBox.textContent = message;
@@ -287,41 +346,31 @@
     }
 
     function initializeChartData() {
-        frontChart = createEmptyChart(rows, cols, false); // Front starts white
-        backChart = createEmptyChart(rows, cols, true); // Back starts black
+        frontChart = createEmptyChart(rows, cols, false);
+        backChart = createEmptyChart(rows, cols, true);
         console.log('Chart data initialized.');
     }
 
-    // Function to render an entire chart grid, including headers
     function renderChart(chartData, containerElementId, enableEdit, chartType) {
         const containerElement = document.getElementById(containerElementId);
-        containerElement.innerHTML = ''; // Clear existing cells
+        containerElement.innerHTML = '';
 
-        // Set grid template columns: 1 for row numbers, then 'cols' for pattern cells
         containerElement.style.gridTemplateColumns = `var(--cell-size) repeat(${cols}, var(--cell-size))`;
-        // Set grid template rows: 'rows' for pattern cells, then 1 for column numbers (at the bottom)
         containerElement.style.gridTemplateRows = `repeat(${rows}, var(--cell-size)) var(--cell-size)`;
 
-        // --- Render Main Pattern Area and Row Headers (top to bottom) ---
-        // Rows in chartData are 0-indexed (top to bottom). Displayed numbers are 1-indexed (bottom to top).
-        // So, patternRowIndex (0 to rows-1) corresponds to displayedRow (rows to 1).
-        // For displayed row 'r', the internal index is 'rows - r'.
         for (let rDisplay = rows; rDisplay >= 1; rDisplay--) {
-            const patternRIdx = rows - rDisplay; // Convert display row to 0-indexed pattern row
+            const patternRIdx = rows - rDisplay;
 
-            // Row Header (first column of this logical row)
             const rowHeader = document.createElement('div');
             rowHeader.classList.add('number-header');
-            rowHeader.textContent = rDisplay; // Display r (1-indexed)
+            rowHeader.textContent = rDisplay;
             containerElement.appendChild(rowHeader);
 
-            // Pattern Cells for this row
-            for (let cDisplay = 1; cDisplay <= cols; cDisplay++) { // Loop for columns (Left to Right for drawing)
-                const patternCIdx = cDisplay - 1; // Convert display col to 0-indexed pattern col
+            for (let cDisplay = 1; cDisplay <= cols; cDisplay++) {
+                const patternCIdx = cDisplay - 1;
 
                 const cellDiv = document.createElement('div');
                 cellDiv.classList.add('grid-cell');
-                // Store 0-indexed row/col for internal data array reference
                 cellDiv.dataset.patternRow = patternRIdx;
                 cellDiv.dataset.patternCol = patternCIdx;
 
@@ -330,28 +379,23 @@
                     cellDiv.addEventListener('click', () => toggleCell(chartType, patternRIdx, patternCIdx));
                 }
 
-                // Set initial color for front/back charts based on their data
                 if (chartType === 'front') {
                     cellDiv.classList.add(frontChart[patternRIdx][patternCIdx] ? 'bg-black' : 'bg-white');
                 } else if (chartType === 'back') {
                     cellDiv.classList.add(backChart[patternRIdx][patternCIdx] ? 'bg-black' : 'bg-white');
                 }
-                // Combined chart cells will be updated by generateAndRenderCombinedChart after their initial render
                 containerElement.appendChild(cellDiv);
             }
         }
 
-        // --- Render Bottom Row: Blank Corner + Column Headers (right to left) ---
-        // Blank bottom-left corner cell (occupies the space of the row number in the bottom row)
         const bottomLeftCornerDiv = document.createElement('div');
         bottomLeftCornerDiv.classList.add('corner-header');
         containerElement.appendChild(bottomLeftCornerDiv);
 
-        // Column headers (Right to Left: cols, cols-1, ..., 1)
-        for (let cDisplay = cols; cDisplay >= 1; cDisplay--) { // Loop for columns (Right to Left for numbering)
+        for (let cDisplay = cols; cDisplay >= 1; cDisplay--) {
             const colHeader = document.createElement('div');
             colHeader.classList.add('number-header');
-            colHeader.textContent = cDisplay; // Display c (1-indexed)
+            colHeader.textContent = cDisplay;
             containerElement.appendChild(colHeader);
         }
     }
@@ -370,7 +414,6 @@
       }
 
       targetChart[patternRIdx][patternCIdx] = !targetChart[patternRIdx][patternCIdx];
-      // Update the specific cell's color in the DOM
       const cellDiv = document.getElementById(targetElementId).querySelector(`[data-pattern-row="${patternRIdx}"][data-pattern-col="${patternCIdx}"]`);
       if (cellDiv) {
           cellDiv.classList.remove('bg-black', 'bg-white', 'bg-gray-200');
@@ -385,22 +428,21 @@
         frontRow.map((frontCell, cIdx) => {
           const backCell = backChart[rIdx][cIdx];
 
-          if (frontCell && !backCell) { // Front Black, Back White
+          if (frontCell && !backCell) {
             return 'BW';
-          } else if (!frontCell && backCell) { // Front White, Back Black
+          } else if (!frontCell && backCell) {
             return 'WB';
-          } else if (frontCell && backCell) { // Both Black
+          } else if (frontCell && backCell) {
             return 'BB';
-          } else { // Both White
+          } else {
             return 'WW';
           }
         })
       );
       console.log('New Combined Chart Data (for DOM render):', combinedChart);
 
-      combinedChart.forEach((row, rIdx) => { // rIdx, cIdx here are 0-indexed for pattern data
+      combinedChart.forEach((row, rIdx) => {
         row.forEach((cellValue, cIdx) => {
-          // Find the specific cell by its data attributes
           const cellDiv = combinedChartGridElement.querySelector(`[data-pattern-row="${rIdx}"][data-pattern-col="${cIdx}"]`);
           if (cellDiv) {
             let backgroundColorClass = 'bg-gray-200';
@@ -420,7 +462,7 @@
             } else if (cellValue === 'WB') {
               dotContentHTML = '<span class="dot-container text-black">⚫</span>';
             }
-            cellDiv.innerHTML = dotContentHTML; // Set innerHTML with the dot span
+            cellDiv.innerHTML = dotContentHTML;
           }
         });
       });
@@ -435,7 +477,7 @@
             currentCellSize = newSize;
             currentDotSize = Math.max(8, Math.round(currentCellSize / 2));
             currentDotFontSize = Math.max(0.5, currentCellSize / 32);
-            currentNumberFontSize = `${Math.max(0.6, currentCellSize / 35)}rem`; // Adjust number font size
+            currentNumberFontSize = `${Math.max(0.6, currentCellSize / 35)}rem`;
 
             document.documentElement.style.setProperty('--cell-size', `${currentCellSize}px`);
             document.documentElement.style.setProperty('--dot-size', `${currentDotSize}px`);
@@ -443,87 +485,79 @@
             document.documentElement.style.setProperty('--number-font-size', currentNumberFontSize);
         }
 
-        // Re-render all charts to apply new cell size, dot, and number styles, preserving data
         renderChart(frontChart, 'frontChartGrid', true, 'front');
         renderChart(backChart, 'backChartGrid', true, 'back');
-        renderChart(combinedChart, 'combinedChartGrid', false, 'combined'); // Explicitly render combined chart grid
-        generateAndRenderCombinedChart(); // Re-render combined with current data
+        renderChart(combinedChart, 'combinedChartGrid', false, 'combined');
+        generateAndRenderCombinedChart();
         console.log(`Zoom updated to cell size: ${currentCellSize}px, dot size: ${currentDotSize}px, font size: ${currentDotFontSize}rem, number font size: ${currentNumberFontSize}.`);
     }
 
-    // Function to draw the combined chart onto a hidden canvas for precise image generation
     function drawCombinedChartToCanvas() {
         const canvas = document.createElement('canvas');
-        const renderScale = 4; // Higher scale for better resolution
+        const renderScale = 4;
         const scaledCellSize = currentCellSize * renderScale;
         const scaledDotRadius = (currentDotSize / 2) * renderScale;
-        const scaledNumberFontSizePx = parseFloat(currentNumberFontSize) * 16 * renderScale; // Convert rem to px and scale
+        const scaledNumberFontSizePx = parseFloat(currentNumberFontSize) * 16 * renderScale;
 
-        // Canvas dimensions need to account for the number row and column
-        canvas.width = (cols + 1) * scaledCellSize; // +1 for the row number column on the left
-        canvas.height = (rows + 1) * scaledCellSize; // +1 for the column number row at the bottom
+        canvas.width = (cols + 1) * scaledCellSize;
+        canvas.height = (rows + 1) * scaledCellSize;
         const ctx = canvas.getContext('2d');
 
-        // Set font for numbers
-        ctx.font = `${scaledNumberFontSizePx}px Inter`; // Use "Inter" font or a fallback
+        ctx.font = `${scaledNumberFontSizePx}px Inter`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#4b5563'; // gray-700 for numbers text
+        ctx.fillStyle = '#4b5563';
 
         // Draw Blank Top-Left Corner
-        ctx.fillStyle = '#f3f4f6'; // background for numbers
+        ctx.fillStyle = '#f3f4f6';
         ctx.fillRect(0, 0, scaledCellSize, scaledCellSize);
-        ctx.strokeStyle = '#9ca3af'; // border color
+        ctx.strokeStyle = '#9ca3af';
         ctx.lineWidth = 1 * renderScale;
         ctx.strokeRect(0, 0, scaledCellSize, scaledCellSize);
 
-        // Draw Row Numbers (left-most column) - 1-indexed, Bottom to Top for display
-        // Loop from the top-most pattern row (0-indexed) down to the bottom-most pattern row
+        // Draw Row Numbers (left-most column)
         for (let rIdx = 0; rIdx < rows; rIdx++) {
-            const rDisplay = rows - rIdx; // Convert 0-indexed pattern row to 1-indexed display row (bottom to top)
-            const canvasY = rIdx * scaledCellSize; // Y position on canvas
+            const rDisplay = rows - rIdx;
+            const canvasY = rIdx * scaledCellSize;
 
-            ctx.fillStyle = '#f3f4f6'; // bg-gray-100 for numbers background
-            ctx.fillRect(0, canvasY, scaledCellSize, scaledCellSize); // Background for number cell
+            ctx.fillStyle = '#f3f4f6';
+            ctx.fillRect(0, canvasY, scaledCellSize, scaledCellSize);
             ctx.strokeStyle = '#9ca3af';
             ctx.lineWidth = 1 * renderScale;
-            ctx.strokeRect(0, canvasY, scaledCellSize, scaledCellSize); // Border for number cell
+            ctx.strokeRect(0, canvasY, scaledCellSize, scaledCellSize);
 
-            ctx.fillStyle = '#4b5563'; // Text color
+            ctx.fillStyle = '#4b5563';
             ctx.fillText(rDisplay.toString(), scaledCellSize / 2, canvasY + scaledCellSize / 2);
         }
 
-        // Draw Pattern Cells (offset by 1 column for row numbers, and 0 for row offset as they fill top part)
-        combinedChart.forEach((row, rIdx) => { // rIdx is 0-indexed pattern row (top to bottom)
-            row.forEach((cellValue, cIdx) => { // cIdx is 0-indexed pattern col (left to right)
-                const x = (cIdx + 1) * scaledCellSize; // Offset by one column for row numbers
-                const y = rIdx * scaledCellSize; // Top-most rows for pattern data
+        // Draw Pattern Cells
+        combinedChart.forEach((row, rIdx) => {
+            row.forEach((cellValue, cIdx) => {
+                const x = (cIdx + 1) * scaledCellSize;
+                const y = rIdx * scaledCellSize;
 
-                // Draw cell background
                 if (cellValue === 'BB' || cellValue === 'BW') {
-                    ctx.fillStyle = '#000'; // Black
+                    ctx.fillStyle = '#000';
                 } else if (cellValue === 'WW' || cellValue === 'WB') {
-                    ctx.fillStyle = '#fff'; // White
+                    ctx.fillStyle = '#fff';
                 } else {
-                    ctx.fillStyle = '#e5e7eb'; // Gray fallback
+                    ctx.fillStyle = '#e5e7eb';
                 }
                 ctx.fillRect(x, y, scaledCellSize, scaledCellSize);
 
-                // Draw cell border
-                ctx.strokeStyle = '#9ca3af'; // gray-400
+                ctx.strokeStyle = '#9ca3af';
                 ctx.lineWidth = 1 * renderScale;
                 ctx.strokeRect(x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, scaledCellSize - ctx.lineWidth, scaledCellSize - ctx.lineWidth);
 
-                // Draw solid circle dot if applicable (no stroke for solid look)
-                if (cellValue === 'BW') { // Black background, White dot
-                    ctx.fillStyle = '#fff'; // White dot color
+                if (cellValue === 'BW') {
+                    ctx.fillStyle = '#fff';
                     ctx.beginPath();
                     const dotCenterX = x + scaledCellSize / 2;
                     const dotCenterY = y + scaledCellSize / 2;
                     ctx.arc(dotCenterX, dotCenterY, scaledDotRadius, 0, Math.PI * 2);
                     ctx.fill();
-                } else if (cellValue === 'WB') { // White background, Black dot
-                    ctx.fillStyle = '#000'; // Black dot color
+                } else if (cellValue === 'WB') {
+                    ctx.fillStyle = '#000';
                     ctx.beginPath();
                     const dotCenterX = x + scaledCellSize / 2;
                     const dotCenterY = y + scaledCellSize / 2;
@@ -533,58 +567,235 @@
             });
         });
 
-        // Draw Column Numbers (bottom-most row) - 1-indexed, Right to Left for display
-        const colNumbersY = rows * scaledCellSize; // Y position for the column number row
+        // Draw Column Numbers (bottom-most row)
+        const colNumbersY = rows * scaledCellSize;
         for (let cDisplay = cols; cDisplay >= 1; cDisplay--) {
-            const canvasX = (cols - cDisplay + 1) * scaledCellSize; // X position on canvas (offset by 1 for row numbers)
+            const canvasX = (cols - cDisplay + 1) * scaledCellSize;
 
-            ctx.fillStyle = '#f3f4f6'; // bg-gray-100 for numbers background
-            ctx.fillRect(canvasX, colNumbersY, scaledCellSize, scaledCellSize); // Background for number cell
+            ctx.fillStyle = '#f3f4f6';
+            ctx.fillRect(canvasX, colNumbersY, scaledCellSize, scaledCellSize);
             ctx.strokeStyle = '#9ca3af';
             ctx.lineWidth = 1 * renderScale;
-            ctx.strokeRect(canvasX, colNumbersY, scaledCellSize, scaledCellSize); // Border for number cell
+            ctx.strokeRect(canvasX, colNumbersY, scaledCellSize, scaledCellSize);
 
-            ctx.fillStyle = '#4b5563'; // Text color
+            ctx.fillStyle = '#4b5563';
             ctx.fillText(cDisplay.toString(), canvasX + scaledCellSize / 2, colNumbersY + scaledCellSize / 2);
         }
 
         return canvas;
     }
 
-    function downloadCombinedChart() {
-        showMessage('Generating image...', 1000);
+    async function downloadCombinedChartPDF() {
+        showMessage('Generating chart PDF...', 1000);
         const canvas = drawCombinedChartToCanvas();
-        const image = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.href = image;
-        link.download = 'double-knitting-combined-chart.png';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showMessage('Chart downloaded successfully!');
-        console.log('Combined chart downloaded.');
+        const imgData = canvas.toDataURL('image/png');
+        const title = patternTitleInput.value.trim();
+
+        const doc = new jsPDF('landscape', 'pt', 'a4');
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const pdfHeight = doc.internal.pageSize.getHeight();
+        let currentY = 20;
+
+        if (title) {
+            doc.setFontSize(18);
+            doc.text(title, pdfWidth / 2, currentY, { align: 'center' });
+            currentY += 30;
+        }
+
+        doc.setFontSize(14);
+        doc.text("Double Knitting Combined Chart", pdfWidth / 2, currentY, { align: 'center' });
+        currentY += 20;
+
+        const imgProps= doc.getImageProperties(imgData);
+        const imgRatio = imgProps.width / imgProps.height;
+        let imgWidth = pdfWidth * 0.9;
+        let imgHeight = imgWidth / imgRatio;
+
+        if (imgHeight > (pdfHeight - currentY - 20)) {
+            imgHeight = pdfHeight - currentY - 20;
+            imgWidth = imgHeight * imgRatio;
+        }
+
+        const xOffset = (pdfWidth - imgWidth) / 2;
+
+        doc.addImage(imgData, 'PNG', xOffset, currentY, imgWidth, imgHeight);
+        doc.save('double-knitting-combined-chart.pdf');
+        showMessage('Chart PDF downloaded successfully!');
+        console.log('Combined chart PDF downloaded.');
     }
 
-    function copyCombinedChart() {
-        showMessage('Copying image to clipboard...', 1000);
-        const canvas = drawCombinedChartToCanvas();
-        canvas.toBlob(function(blob) {
-            if (navigator.clipboard && navigator.clipboard.write) {
-                const item = new ClipboardItem({ "image/png": blob });
-                navigator.clipboard.write([item])
-                    .then(() => {
-                        showMessage('Chart copied to clipboard!');
-                        console.log('Combined chart copied to clipboard (Clipboard API).');
-                    })
-                    .catch(err => {
-                        console.warn('Failed to copy to clipboard using Clipboard API:', err);
-                        showMessage('Failed to copy chart to clipboard.');
-                    });
-            } else {
-                showMessage('Your browser does not support direct image copy to clipboard. Please download and copy manually.', 5000);
-                console.warn('Clipboard API not available. Fallback to execCommand will likely fail for images.');
+    function generateWrittenInstructions() {
+        let instructions = "Double Knitting Pattern Instructions:\n\n";
+        instructions += `Chart Size: ${rows} Rows x ${cols} Columns\n\n`;
+
+        for (let rIdx = 0; rIdx < rows; rIdx++) {
+            const rDisplay = rIdx + 1;
+            instructions += `Row ${rDisplay}: `;
+
+            let rowInstructions = [];
+            for (let cIdx = 0; cIdx < cols; cIdx++) {
+                const cellValue = combinedChart[rIdx][cIdx];
+                switch (cellValue) {
+                    case 'BW':
+                        rowInstructions.push("KB/PW");
+                        break;
+                    case 'WB':
+                        rowInstructions.push("KW/PB");
+                        break;
+                    case 'BB':
+                        rowInstructions.push("KBB");
+                        break;
+                    case 'WW':
+                        rowInstructions.push("KWW");
+                        break;
+                }
             }
-        }, 'image/png');
+            instructions += rowInstructions.join(", ") + ".\n";
+        }
+
+        instructionsText.textContent = instructions;
+        writtenInstructionsOutput.classList.remove('hidden');
+        showMessage('Instructions generated!');
+        return instructions;
+    }
+
+    async function downloadWrittenInstructionsPDF() {
+        showMessage('Generating instructions PDF...', 1000);
+        const instructions = generateWrittenInstructions();
+        const title = patternTitleInput.value.trim();
+
+        const doc = new jsPDF();
+        let currentY = 20;
+
+        if (title) {
+            doc.setFontSize(18);
+            doc.text(title, doc.internal.pageSize.getWidth() / 2, currentY, { align: 'center' });
+            currentY += 30;
+        }
+
+        doc.setFontSize(14);
+        doc.text("Written Double Knitting Instructions", doc.internal.pageSize.getWidth() / 2, currentY, { align: 'center' });
+        currentY += 20;
+
+        doc.setFontSize(10);
+        const textLines = doc.splitTextToSize(instructions, doc.internal.pageSize.getWidth() - 20);
+        doc.text(textLines, 10, currentY);
+
+        currentY += (textLines.length * 10) + 10;
+
+        doc.setFontSize(10);
+        doc.text("Instructions Legend:", 10, currentY);
+        currentY += 15;
+        doc.text("- KB/PW: Knit Black on Front, Purl White on Back.", 15, currentY);
+        currentY += 10;
+        doc.text("- KW/PB: Knit White on Front, Purl Black on Back.", 15, currentY);
+        currentY += 10;
+        doc.text("- KBB: Knit Black on Both Front and Back.", 15, currentY);
+        currentY += 10;
+        doc.text("- KWW: Knit White on Both Front and Back.", 15, currentY);
+
+
+        doc.save('double-knitting-instructions.pdf');
+        showMessage('Instructions PDF downloaded successfully!');
+        console.log('Instructions PDF downloaded.');
+    }
+
+    async function downloadCombinedPatternDocumentPDF() {
+        showMessage('Generating full pattern PDF...', 1000);
+
+        const canvas = drawCombinedChartToCanvas();
+        const imageUrl = canvas.toDataURL('image/png');
+
+        const instructions = generateWrittenInstructions();
+        const title = patternTitleInput.value.trim();
+
+        const doc = new jsPDF('portrait', 'pt', 'a4');
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const pdfHeight = doc.internal.pageSize.getHeight();
+        const margin = 36; // 0.5 inch margin, approx 36pt
+        let currentY = margin;
+
+        // Add Title
+        if (title) {
+            doc.setFontSize(18);
+            doc.text(title, pdfWidth / 2, currentY, { align: 'center' });
+            currentY += 30;
+        }
+
+        // Add Main Heading for the document
+        doc.setFontSize(14);
+        doc.text("Double Knitting Pattern: Visual Chart & Written Instructions", pdfWidth / 2, currentY, { align: 'center' });
+        currentY += 40; // More space after main heading
+
+        // Add Chart Section Heading and Description
+        doc.setFontSize(16);
+        doc.text("Combined Pattern Chart", pdfWidth / 2, currentY, { align: 'center' });
+        currentY += 20;
+        doc.setFontSize(10);
+        doc.text("This chart includes row numbers (left, bottom-to-top) and column numbers (bottom, right-to-left).", pdfWidth / 2, currentY, { align: 'center' });
+        currentY += 15;
+
+        // Add Chart Image
+        const imgProps = doc.getImageProperties(imageUrl);
+        const imgRatio = imgProps.width / imgProps.height;
+        let imgWidth = pdfWidth - (2 * margin); // Use full available width
+        let imgHeight = imgWidth / imgRatio;
+
+        // Scale down if image is too tall for the remaining page
+        const maxImgHeight = pdfHeight - currentY - margin - (doc.getFontSize() * 5); // Leave space for instructions text
+        if (imgHeight > maxImgHeight) {
+            imgHeight = maxImgHeight;
+            imgWidth = imgHeight * imgRatio;
+        }
+
+        const imgX = (pdfWidth - imgWidth) / 2;
+        doc.addImage(imageUrl, 'PNG', imgX, currentY, imgWidth, imgHeight);
+        currentY += imgHeight + 30; // Move Y below the image + some padding
+
+        // Add Written Instructions Section Heading
+        // Check if new page is needed before adding instructions
+        if (currentY + (doc.getFontSize() * 2) > pdfHeight - margin) {
+            doc.addPage();
+            currentY = margin;
+        }
+        doc.setFontSize(16);
+        doc.text("Written Instructions", pdfWidth / 2, currentY, { align: 'center' });
+        currentY += 20;
+
+        // Add Instructions Text
+        doc.setFontSize(10);
+        const textLines = doc.splitTextToSize(instructions, pdfWidth - (2 * margin));
+        
+        for (let i = 0; i < textLines.length; i++) {
+            if (currentY + doc.getLineHeight() > pdfHeight - margin) { // Check if line will overflow
+                doc.addPage();
+                currentY = margin;
+            }
+            doc.text(textLines[i], margin, currentY);
+            currentY += doc.getLineHeight();
+        }
+        currentY += 10; // Extra space after instructions
+
+        // Add Instructions Legend
+        // Check if new page is needed before adding legend
+        if (currentY + (doc.getFontSize() * 5) > pdfHeight - margin) { // Approx height for legend
+            doc.addPage();
+            currentY = margin;
+        }
+        doc.setFontSize(10);
+        doc.text("Instructions Legend:", margin, currentY);
+        currentY += 15;
+        doc.text("- KB/PW: Knit Black on Front, Purl White on Back.", margin + 5, currentY);
+        currentY += 10;
+        doc.text("- KW/PB: Knit White on Front, Purl Black on Back.", margin + 5, currentY);
+        currentY += 10;
+        doc.text("- KBB: Knit Black on Both Front and Back.", margin + 5, currentY);
+        currentY += 10;
+        doc.text("- KWW: Knit White on Both Front and Back.", margin + 5, currentY);
+        
+        doc.save('double-knitting-full-pattern.pdf');
+        showMessage('Full pattern PDF downloaded successfully!');
+        console.log('Full pattern PDF downloaded.');
     }
 
     function restartCharts() {
@@ -596,10 +807,12 @@
         currentCellSize = 24;
         currentDotSize = 12;
         currentDotFontSize = 0.75;
-        currentNumberFontSize = '0.7rem'; // Reset number font size
+        currentNumberFontSize = '0.7rem';
+        patternTitleInput.value = '';
 
         initializeChartData();
-        updateZoom(0); // Trigger a full re-render with default settings and empty charts
+        updateZoom(0);
+        writtenInstructionsOutput.classList.add('hidden');
         showMessage('Charts have been reset!');
     }
 
@@ -615,7 +828,6 @@
             targetElementId = 'backChartGrid';
         }
 
-        // Inverse the data and update DOM
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
                 targetChart[r][c] = !targetChart[r][c];
@@ -626,11 +838,11 @@
                 }
             }
         }
-        generateAndRenderCombinedChart(); // Regenerate and re-render combined chart
+        generateAndRenderCombinedChart();
         showMessage(`${chartType} chart colors inverted!`);
     }
 
-    // Event listeners for dimension inputs
+    // Event listeners
     rowsInput.addEventListener('change', (e) => {
       rows = Math.max(1, parseInt(e.target.value));
       initializeChartData();
@@ -643,25 +855,23 @@
       updateZoom(0);
     });
 
-    // Event listeners for zoom buttons
     zoomInBtn.addEventListener('click', () => updateZoom(1));
     zoomOutBtn.addEventListener('click', () => updateZoom(-1));
-
-    // Event listeners for download/copy/restart buttons
-    downloadChartBtn.addEventListener('click', downloadCombinedChart);
-    copyChartBtn.addEventListener('click', copyCombinedChart);
+    downloadChartBtn.addEventListener('click', downloadCombinedChartPDF);
     restartBtn.addEventListener('click', restartCharts);
-
-    // Event listeners for inverse buttons
     inverseFrontBtn.addEventListener('click', () => inverseChartColors('front'));
     inverseBackBtn.addEventListener('click', () => inverseChartColors('back'));
+    generateInstructionsBtn.addEventListener('click', generateWrittenInstructions);
+    downloadInstructionsBtn.addEventListener('click', downloadWrittenInstructionsPDF);
+    downloadCombinedDocumentBtn.addEventListener('click', downloadCombinedPatternDocumentPDF);
+
 
     // Initial setup on window load
     window.onload = () => {
         rows = Math.max(1, parseInt(rowsInput.value));
         cols = Math.max(1, parseInt(colsInput.value));
         initializeChartData();
-        updateZoom(0); // This will trigger the first full render
+        updateZoom(0);
     };
   </script>
 </body>
