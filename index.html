@@ -449,7 +449,8 @@
       console.log('Generating and rendering combined chart...');
       combinedChart = frontChart.map((frontRow, rIdx) =>
         frontRow.map((frontCell, cIdx) => {
-          const backCell = backChart[rIdx][cIdx];
+          // Get the back cell from the reversed column index
+          const backCell = backChart[rIdx][(cols - 1) - cIdx]; // CRITICAL CHANGE: Reverse back chart columns
 
           if (frontCell && !backCell) {
             return 'BW';
